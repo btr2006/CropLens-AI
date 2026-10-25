@@ -1,0 +1,16 @@
+{
+  "classes": [
+    "non_leaf",
+    "valid_leaf"
+  ],
+  "class_to_idx": {
+    "non_leaf": 0,
+    "valid_leaf": 1
+  },
+  "idx_to_class": {
+    "0": "non_leaf",
+    "1": "valid_leaf"
+  },
+  "target_class": "valid_leaf",
+  "target_idx": 1
+}

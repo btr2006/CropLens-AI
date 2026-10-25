@@ -1,0 +1,18 @@
+# CropLens AI - Production Backend Dependencies
+# CPU-optimized PyTorch wheels for cloud hosting (Hugging Face Spaces / Render)
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
+torchvision>=0.15.0
+
+# FastAPI framework & ASGI server
+fastapi>=0.110.0
+uvicorn>=0.28.0
+python-multipart>=0.0.9
+pydantic>=2.0.0
+
+# Image processing & ML dependencies
+pillow>=10.0.0
+pandas>=2.0.0
+scikit-learn>=1.4.0
+joblib>=1.3.0

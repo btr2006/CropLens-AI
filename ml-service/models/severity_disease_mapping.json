@@ -1,0 +1,123 @@
+{
+  "description": "Mapping from Stage 1 Disease Classifier outputs to Stage 2 Severity-Conditioned Model disease IDs",
+  "supported_disease_pairs": [
+    {
+      "id": 0,
+      "crop": "Corn",
+      "disease": "Northern leaf blight",
+      "mild_aic_id": 10,
+      "severe_aic_id": 11,
+      "stage1_match": "Corn_(maize)___Northern_Leaf_Blight"
+    },
+    {
+      "id": 1,
+      "crop": "Corn",
+      "disease": "Gray leaf spot",
+      "mild_aic_id": 12,
+      "severe_aic_id": 13,
+      "stage1_match": "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot"
+    },
+    {
+      "id": 2,
+      "crop": "Corn",
+      "disease": "Rust",
+      "mild_aic_id": 15,
+      "severe_aic_id": 16,
+      "stage1_match": "Corn_(maize)___Common_rust_"
+    },
+    {
+      "id": 3,
+      "crop": "Peach",
+      "disease": "Bacterial spot",
+      "mild_aic_id": 26,
+      "severe_aic_id": 27,
+      "stage1_match": "Peach___Bacterial_spot"
+    },
+    {
+      "id": 4,
+      "crop": "Pepper",
+      "disease": "Bacterial spot",
+      "mild_aic_id": 29,
+      "severe_aic_id": 30,
+      "stage1_match": "Pepper,_bell___Bacterial_spot"
+    },
+    {
+      "id": 5,
+      "crop": "Potato",
+      "disease": "Early blight",
+      "mild_aic_id": 32,
+      "severe_aic_id": 33,
+      "stage1_match": "Potato___Early_blight"
+    },
+    {
+      "id": 6,
+      "crop": "Potato",
+      "disease": "Late blight",
+      "mild_aic_id": 35,
+      "severe_aic_id": 36,
+      "stage1_match": "Potato___Late_blight"
+    },
+    {
+      "id": 7,
+      "crop": "Tomato",
+      "disease": "Bacterial spot",
+      "mild_aic_id": 42,
+      "severe_aic_id": 43,
+      "stage1_match": "Tomato___Bacterial_spot"
+    },
+    {
+      "id": 8,
+      "crop": "Tomato",
+      "disease": "Early blight / Alternaria",
+      "mild_aic_id": 44,
+      "severe_aic_id": 45,
+      "stage1_match": "Tomato___Early_blight"
+    },
+    {
+      "id": 9,
+      "crop": "Tomato",
+      "disease": "Gray leaf spot",
+      "mild_aic_id": 46,
+      "severe_aic_id": 47,
+      "stage1_match": "Tomato___Gray_leaf_spot"
+    },
+    {
+      "id": 10,
+      "crop": "Tomato",
+      "disease": "Late blight",
+      "mild_aic_id": 49,
+      "severe_aic_id": 50,
+      "stage1_match": "Tomato___Late_blight"
+    },
+    {
+      "id": 11,
+      "crop": "Tomato",
+      "disease": "Leaf mold",
+      "mild_aic_id": 51,
+      "severe_aic_id": 52,
+      "stage1_match": "Tomato___Leaf_Mold"
+    },
+    {
+      "id": 12,
+      "crop": "Tomato",
+      "disease": "Septoria leaf spot",
+      "mild_aic_id": 55,
+      "severe_aic_id": 56,
+      "stage1_match": "Tomato___Septoria_leaf_spot"
+    },
+    {
+      "id": 13,
+      "crop": "Tomato",
+      "disease": "Spider mites / Two-spotted",
+      "mild_aic_id": 57,
+      "severe_aic_id": 58,
+      "stage1_match": "Tomato___Spider_mites Two-spotted_spider_mite"
+    }
+  ],
+  "inference_routing_logic": {
+    "healthy_action": "Return Severity: Healthy (0% Yield Impact)",
+    "explicit_severity_action": "Pass leaf image + disease_pair_id to Stage 2 Severity Model",
+    "general_single_stage_action": "Return Severity: General / Single-stage (Do not force Mild/Severe)",
+    "unsupported_action": "Return Severity: Unavailable for this disease"
+  }
+}

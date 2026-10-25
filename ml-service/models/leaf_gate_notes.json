@@ -1,0 +1,12 @@
+{
+  "model_role": "First-line semantic leaf validation gate before disease classification",
+  "checkpoint_file": "leaf_gate_mobilenetv2_best.pth",
+  "classes_file": "leaf_gate_classes.json",
+  "dataset_composition": {
+    "positive_source": "PlantVillage (14 crops, 38 classes, healthy & diseased) + RoCoLe coffee leaves",
+    "negative_source": "Imagenette-160 (10 diverse classes: vehicles, buildings, animals, tools, instruments) + synthetic UI screenshots, sky gradients, textures",
+    "leakage_prevention": "Strict SHA-256 deduplication across train, val, and test splits"
+  },
+  "operating_threshold": 0.9,
+  "safety_guarantees": "Stops downstream inference when non_leaf is detected; does NOT claim 100% OOD detection; operates in tandem with image quality checks and disease classifier confidence."
+}

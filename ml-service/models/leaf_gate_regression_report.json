@@ -1,0 +1,175 @@
+{
+  "non_leaf_all_passed": true,
+  "genuine_all_passed": true,
+  "crop_mismatch_passed": true,
+  "quality_check_passed": true,
+  "operating_threshold": 0.9,
+  "non_leaf_results": [
+    {
+      "category": "Room / Indoor Tiles",
+      "passed": true,
+      "leaf_confidence": 92.56,
+      "timing_ms": 1500.66,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "Person / Portrait",
+      "passed": true,
+      "leaf_confidence": 99.96,
+      "timing_ms": 15.34,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "Road / Outdoor Pump",
+      "passed": true,
+      "leaf_confidence": 92.56,
+      "timing_ms": 20.77,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "Phone / Electronics",
+      "passed": true,
+      "leaf_confidence": 100.0,
+      "timing_ms": 19.92,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "Animal (Dog)",
+      "passed": true,
+      "leaf_confidence": 92.56,
+      "timing_ms": 18.13,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "Food / Meal",
+      "passed": true,
+      "leaf_confidence": 99.91,
+      "timing_ms": 13.06,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "UI Screenshot",
+      "passed": true,
+      "leaf_confidence": 100.0,
+      "timing_ms": 20.15,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "Atmospheric Sky",
+      "passed": true,
+      "leaf_confidence": 89.99,
+      "timing_ms": 18.77,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "Building / Architecture",
+      "passed": true,
+      "leaf_confidence": 92.56,
+      "timing_ms": 15.55,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    },
+    {
+      "category": "Vehicle (Truck)",
+      "passed": true,
+      "leaf_confidence": 99.96,
+      "timing_ms": 21.43,
+      "stages_executed": [
+        "image_validation",
+        "leaf_validation"
+      ]
+    }
+  ],
+  "genuine_results": [
+    {
+      "crop": "Tomato",
+      "passed": true,
+      "leaf_confidence": 100.0,
+      "predicted_crop": "Tomato",
+      "predicted_disease": "Healthy",
+      "leaf_gate_timing_ms": 17.93
+    },
+    {
+      "crop": "Potato",
+      "passed": true,
+      "leaf_confidence": 99.96,
+      "predicted_crop": "Potato",
+      "predicted_disease": "Healthy",
+      "leaf_gate_timing_ms": 23.25
+    },
+    {
+      "crop": "Corn",
+      "passed": true,
+      "leaf_confidence": 99.99,
+      "predicted_crop": "Corn (maize)",
+      "predicted_disease": "Healthy",
+      "leaf_gate_timing_ms": 33.4
+    },
+    {
+      "crop": "Apple",
+      "passed": true,
+      "leaf_confidence": 100.0,
+      "predicted_crop": "Apple",
+      "predicted_disease": "Healthy",
+      "leaf_gate_timing_ms": 16.98
+    },
+    {
+      "crop": "Strawberry",
+      "passed": true,
+      "leaf_confidence": 100.0,
+      "predicted_crop": "Strawberry",
+      "predicted_disease": "Healthy",
+      "leaf_gate_timing_ms": 17.32
+    },
+    {
+      "crop": "Peach",
+      "passed": true,
+      "leaf_confidence": 100.0,
+      "predicted_crop": "Peach",
+      "predicted_disease": "Healthy",
+      "leaf_gate_timing_ms": 17.85
+    },
+    {
+      "crop": "Pepper",
+      "passed": true,
+      "leaf_confidence": 100.0,
+      "predicted_crop": "Pepper, bell",
+      "predicted_disease": "Healthy",
+      "leaf_gate_timing_ms": 18.22
+    },
+    {
+      "crop": "Grape",
+      "passed": true,
+      "leaf_confidence": 100.0,
+      "predicted_crop": "Grape",
+      "predicted_disease": "Healthy",
+      "leaf_gate_timing_ms": 18.22
+    }
+  ]
+}

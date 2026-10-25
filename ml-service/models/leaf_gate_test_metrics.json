@@ -1,0 +1,27 @@
+{
+  "model_architecture": "MobileNetV2 (Binary Leaf Gate)",
+  "device": "xpu",
+  "total_test_samples": 910,
+  "test_leaf_samples": 455,
+  "test_non_leaf_samples": 455,
+  "operating_threshold": 0.9,
+  "threshold_selection_strategy": "Empirical sweep on validation set minimizing FAR subject to FRR <= 2.5%",
+  "test_accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "leaf_recall": 1.0,
+  "non_leaf_recall": 1.0,
+  "f1_score": 1.0,
+  "false_acceptance_rate": 0.0,
+  "false_rejection_rate": 0.0,
+  "confusion_matrix": {
+    "true_negatives": 455,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_positives": 455
+  },
+  "latency_ms": {
+    "mean": 11.13,
+    "p95": 15.55
+  }
+}

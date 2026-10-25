@@ -1,0 +1,102 @@
+[
+  {
+    "epoch": 1,
+    "train_loss": 0.3785,
+    "train_acc": 81.93,
+    "val_loss": 0.1483,
+    "val_acc": 93.94,
+    "val_macro_f1": 93.94,
+    "val_macro_precision": 93.93,
+    "val_macro_recall": 93.97
+  },
+  {
+    "epoch": 2,
+    "train_loss": 0.2173,
+    "train_acc": 90.39,
+    "val_loss": 0.125,
+    "val_acc": 93.9,
+    "val_macro_f1": 93.9,
+    "val_macro_precision": 93.91,
+    "val_macro_recall": 93.95
+  },
+  {
+    "epoch": 3,
+    "train_loss": 0.159,
+    "train_acc": 93.16,
+    "val_loss": 0.0812,
+    "val_acc": 96.48,
+    "val_macro_f1": 96.48,
+    "val_macro_precision": 96.47,
+    "val_macro_recall": 96.5
+  },
+  {
+    "epoch": 4,
+    "train_loss": 0.1419,
+    "train_acc": 93.87,
+    "val_loss": 0.0781,
+    "val_acc": 96.59,
+    "val_macro_f1": 96.58,
+    "val_macro_precision": 96.58,
+    "val_macro_recall": 96.58
+  },
+  {
+    "epoch": 5,
+    "train_loss": 0.1224,
+    "train_acc": 94.8,
+    "val_loss": 0.0886,
+    "val_acc": 95.72,
+    "val_macro_f1": 95.71,
+    "val_macro_precision": 95.7,
+    "val_macro_recall": 95.74
+  },
+  {
+    "epoch": 6,
+    "train_loss": 0.1154,
+    "train_acc": 95.31,
+    "val_loss": 0.089,
+    "val_acc": 95.79,
+    "val_macro_f1": 95.78,
+    "val_macro_precision": 95.8,
+    "val_macro_recall": 95.83
+  },
+  {
+    "epoch": 7,
+    "train_loss": 0.1006,
+    "train_acc": 95.88,
+    "val_loss": 0.0852,
+    "val_acc": 96.06,
+    "val_macro_f1": 96.06,
+    "val_macro_precision": 96.05,
+    "val_macro_recall": 96.09
+  },
+  {
+    "epoch": 8,
+    "train_loss": 0.0962,
+    "train_acc": 96.09,
+    "val_loss": 0.0874,
+    "val_acc": 96.06,
+    "val_macro_f1": 96.06,
+    "val_macro_precision": 96.09,
+    "val_macro_recall": 96.12
+  },
+  {
+    "epoch": 9,
+    "train_loss": 0.0974,
+    "train_acc": 96.22,
+    "val_loss": 0.0782,
+    "val_acc": 96.87,
+    "val_macro_f1": 96.86,
+    "val_macro_precision": 96.87,
+    "val_macro_recall": 96.86
+  },
+  {
+    "epoch": 10,
+    "train_loss": 0.0904,
+    "train_acc": 96.33,
+    "val_loss": 0.0792,
+    "val_acc": 96.27,
+    "val_macro_f1": 96.27,
+    "val_macro_precision": 96.27,
+    "val_macro_recall": 96.31
+  }
+]

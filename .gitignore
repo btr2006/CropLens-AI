@@ -1,0 +1,53 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env
+.env.local
+
+# Datasets (approx 9 GB raw archives)
+datasets/
+
+# Local Python virtual environments
+kaggle-env/
+venv/
+.venv/
+env/
+
+# Python bytecode & caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Office / Word temporary lock files
+~$*.docx
+~$*.doc
+
+# Scratch & Tooling Cache
+scratch/
+.agents/
+.archify/
+.archify-temp/
+skills-lock.json
+

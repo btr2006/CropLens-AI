@@ -1,0 +1,17 @@
+{
+  "model_name": "Disease-Conditioned Multi-Crop Severity MobileNetV2",
+  "architecture": "MobileNetV2 (1280-dim feature vector) + Learned Disease Context Embedding (32-dim) -> Classification Head (2 logits: Mild / Severe)",
+  "input_resolution": "224x224 RGB",
+  "training_dataset": "AI Challenger 2018 (PDR2018) Clean Group-Stratified Split",
+  "total_training_samples": 13313,
+  "total_validation_samples": 2871,
+  "total_held_out_test_samples": 2848,
+  "cross_split_duplicates": 0,
+  "best_epoch": 9,
+  "best_val_macro_f1": 96.86,
+  "held_out_test_accuracy": 95.58,
+  "held_out_test_macro_f1": 95.57,
+  "device_used": "xpu",
+  "supported_crop_disease_pairs_count": 14,
+  "known_limitations_and_disclaimer": "This model estimates disease severity only for crop-disease combinations represented with explicit Mild/Severe labels in the training data. It does not provide universal severity estimation for unsupported diseases. Performance is evaluated on dataset test splits; real-farm deployment requires ongoing calibration with field agronomic imagery."
+}

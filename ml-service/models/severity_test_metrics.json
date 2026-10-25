@@ -1,0 +1,194 @@
+{
+  "test_dataset_size": 2848,
+  "overall_metrics": {
+    "accuracy": 95.58,
+    "macro_precision": 95.57,
+    "macro_recall": 95.58,
+    "macro_f1": 95.57,
+    "weighted_f1": 95.58
+  },
+  "class_metrics": {
+    "Mild": {
+      "precision": 95.23,
+      "recall": 95.65,
+      "f1_score": 95.44,
+      "support": 1379
+    },
+    "Severe": {
+      "precision": 95.9,
+      "recall": 95.51,
+      "f1_score": 95.7,
+      "support": 1469
+    }
+  },
+  "per_disease_breakdown": [
+    {
+      "disease_pair_id": 0,
+      "crop": "Corn",
+      "disease": "Northern leaf blight",
+      "stage1_match": "Corn_(maize)___Northern_Leaf_Blight",
+      "mild_f1": 80.0,
+      "severe_f1": 83.08,
+      "macro_f1": 81.54,
+      "mild_support": 32,
+      "severe_support": 28,
+      "total_support": 60
+    },
+    {
+      "disease_pair_id": 1,
+      "crop": "Corn",
+      "disease": "Gray leaf spot",
+      "stage1_match": "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
+      "mild_f1": 83.75,
+      "severe_f1": 79.69,
+      "macro_f1": 81.72,
+      "mild_support": 83,
+      "severe_support": 61,
+      "total_support": 144
+    },
+    {
+      "disease_pair_id": 2,
+      "crop": "Corn",
+      "disease": "Rust",
+      "stage1_match": "Corn_(maize)___Common_rust_",
+      "mild_f1": 99.43,
+      "severe_f1": 99.64,
+      "macro_f1": 99.53,
+      "mild_support": 87,
+      "severe_support": 139,
+      "total_support": 226
+    },
+    {
+      "disease_pair_id": 3,
+      "crop": "Peach",
+      "disease": "Bacterial spot",
+      "stage1_match": "Peach___Bacterial_spot",
+      "mild_f1": 100.0,
+      "severe_f1": 100.0,
+      "macro_f1": 100.0,
+      "mild_support": 317,
+      "severe_support": 43,
+      "total_support": 360
+    },
+    {
+      "disease_pair_id": 4,
+      "crop": "Pepper",
+      "disease": "Bacterial spot",
+      "stage1_match": "Pepper,_bell___Bacterial_spot",
+      "mild_f1": 99.62,
+      "severe_f1": 99.72,
+      "macro_f1": 99.67,
+      "mild_support": 132,
+      "severe_support": 176,
+      "total_support": 308
+    },
+    {
+      "disease_pair_id": 5,
+      "crop": "Potato",
+      "disease": "Early blight",
+      "stage1_match": "Potato___Early_blight",
+      "mild_f1": 100.0,
+      "severe_f1": 100.0,
+      "macro_f1": 100.0,
+      "mild_support": 64,
+      "severe_support": 245,
+      "total_support": 309
+    },
+    {
+      "disease_pair_id": 6,
+      "crop": "Potato",
+      "disease": "Late blight",
+      "stage1_match": "Potato___Late_blight",
+      "mild_f1": 100.0,
+      "severe_f1": 100.0,
+      "macro_f1": 100.0,
+      "mild_support": 88,
+      "severe_support": 43,
+      "total_support": 131
+    },
+    {
+      "disease_pair_id": 7,
+      "crop": "Tomato",
+      "disease": "Bacterial spot",
+      "stage1_match": "Tomato___Bacterial_spot",
+      "mild_f1": 57.85,
+      "severe_f1": 84.01,
+      "macro_f1": 70.93,
+      "mild_support": 55,
+      "severe_support": 165,
+      "total_support": 220
+    },
+    {
+      "disease_pair_id": 8,
+      "crop": "Tomato",
+      "disease": "Early blight / Alternaria",
+      "stage1_match": "Tomato___Early_blight",
+      "mild_f1": 88.24,
+      "severe_f1": 85.71,
+      "macro_f1": 86.97,
+      "mild_support": 49,
+      "severe_support": 44,
+      "total_support": 93
+    },
+    {
+      "disease_pair_id": 9,
+      "crop": "Tomato",
+      "disease": "Gray leaf spot",
+      "stage1_match": "Tomato___Gray_leaf_spot",
+      "mild_f1": 77.78,
+      "severe_f1": 86.3,
+      "macro_f1": 82.04,
+      "mild_support": 43,
+      "severe_support": 75,
+      "total_support": 118
+    },
+    {
+      "disease_pair_id": 10,
+      "crop": "Tomato",
+      "disease": "Late blight",
+      "stage1_match": "Tomato___Late_blight",
+      "mild_f1": 99.73,
+      "severe_f1": 99.1,
+      "macro_f1": 99.41,
+      "mild_support": 186,
+      "severe_support": 55,
+      "total_support": 241
+    },
+    {
+      "disease_pair_id": 11,
+      "crop": "Tomato",
+      "disease": "Leaf mold",
+      "stage1_match": "Tomato___Leaf_Mold",
+      "mild_f1": 99.13,
+      "severe_f1": 99.2,
+      "macro_f1": 99.17,
+      "mild_support": 57,
+      "severe_support": 63,
+      "total_support": 120
+    },
+    {
+      "disease_pair_id": 12,
+      "crop": "Tomato",
+      "disease": "Septoria leaf spot",
+      "stage1_match": "Tomato___Septoria_leaf_spot",
+      "mild_f1": 99.64,
+      "severe_f1": 99.46,
+      "macro_f1": 99.55,
+      "mild_support": 139,
+      "severe_support": 93,
+      "total_support": 232
+    },
+    {
+      "disease_pair_id": 13,
+      "crop": "Tomato",
+      "disease": "Spider mites / Two-spotted",
+      "stage1_match": "Tomato___Spider_mites Two-spotted_spider_mite",
+      "mild_f1": 98.92,
+      "severe_f1": 99.79,
+      "macro_f1": 99.36,
+      "mild_support": 47,
+      "severe_support": 239,
+      "total_support": 286
+    }
+  ]
+}
