@@ -1,17 +1,156 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { generateAIExplanation, GEMINI_MODEL } from '../services/aiAssistantService';
+import {
+  Sprout,
+  Sun,
+  Gauge,
+  BarChart2,
+  ShieldCheck,
+  Shield,
+  Eye,
+  Droplets,
+  Leaf,
+  Wind,
+  FileText,
+  CheckCircle2,
+  AlertTriangle,
+  BookOpen,
+  ExternalLink,
+  Volume2,
+  Square,
+  Key,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Thermometer,
+} from 'lucide-react';
+import { generateAIExplanation } from '../services/aiAssistantService';
 import {
   buildFarmerSpeechScript,
   splitIntoSpeechChunks,
   getAvailableEnglishVoices,
   selectBestVoice,
 } from '../services/voiceTextService';
-import TextReveal from './TextReveal';
-import MagicText from './MagicText';
-import { TextEffect } from '@/components/ui/text-effect';
+import './CropHealthReportEnhanced.css';
 
-export default function AIAssistant({ reportData, weatherState }) {
+/* ─── Animation constant ─── */
+const EASE = [0.16, 1, 0.3, 1];
+
+const cardFadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, delay, ease: EASE },
+});
+
+/* ─── Helper: Format & Highlight Diagnostic Summary ─── */
+function renderHighlightedSummary(summaryText, data) {
+  const {
+    crop = 'Crop',
+    disease = 'Condition',
+    pathogenName = '',
+    confidence = 0,
+    severity = '',
+    predictedYield = null,
+    yieldRisk = 'Low',
+    isHealthy = false,
+  } = data;
+
+  const confStr = typeof confidence === 'number' ? `${confidence.toFixed(1)}% confidence` : `${confidence}% confidence`;
+  const yieldStr = predictedYield != null ? `${predictedYield} t/ha` : null;
+  const riskClass = (yieldRisk || '').toLowerCase() === 'high'
+    ? 'risk-high'
+    : (yieldRisk || '').toLowerCase() === 'medium'
+      ? 'risk-medium'
+      : 'risk-low';
+
+  if (isHealthy) {
+    return (
+      <p className="report-summary-text">
+        CropLens AI has diagnosed your <strong className="report-highlight-green">{crop}</strong> crop as{' '}
+        <strong className="report-highlight-green">Healthy</strong> with{' '}
+        <strong className="report-highlight-green">{confStr}</strong>. Active foliar photosynthesis confirmed with{' '}
+        <strong className="report-highlight-green">0% disease progression</strong>, and an expected yield of{' '}
+        <strong className="report-highlight-green">{yieldStr || 'optimal yield'}</strong> indicating a{' '}
+        <span className={`report-highlight-risk ${riskClass}`}>{yieldRisk} Yield Risk</span>.
+      </p>
+    );
+  }
+
+  return (
+    <p className="report-summary-text">
+      CropLens AI has diagnosed your <strong className="report-highlight-green">{crop}</strong> crop with{' '}
+      <strong className="report-highlight-green">{disease}</strong>
+      {pathogenName ? (
+        <>
+          {' '}caused by the pathogen <em className="report-pathogen-name">{pathogenName}</em>
+        </>
+      ) : null}{' '}
+      with <strong className="report-highlight-green">{confStr}</strong>. The current disease severity is graded as{' '}
+      <strong className="report-highlight-green">{severity || 'Assessed'}</strong>
+      {yieldStr ? (
+        <>
+          , with an expected yield of <strong className="report-highlight-green">{yieldStr}</strong>
+        </>
+      ) : null}{' '}
+      indicating a <span className={`report-highlight-risk ${riskClass}`}>{yieldRisk} Yield Risk</span>.
+    </p>
+  );
+}
+
+/* ─── Timeline Animation Variants ─── */
+const timelineContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.35,
+      staggerChildren: 0.18,
+      delayChildren: 0.25,
+    },
+  },
+};
+
+const timelineCardVariants = {
+  hidden: { opacity: 0, x: -28, filter: 'blur(2px)' },
+  visible: {
+    opacity: 1,
+    x: 0,
+    filter: 'blur(0px)',
+    transition: {
+      duration: 0.55,
+      ease: EASE,
+    },
+  },
+};
+
+const badgeVariants = {
+  hidden: { scale: 0.4, opacity: 0 },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 380,
+      damping: 22,
+    },
+  },
+};
+
+const iconBadgeVariants = {
+  hidden: { scale: 0.4, opacity: 0 },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: {
+      duration: 0.4,
+      delay: 0.1,
+      ease: EASE,
+    },
+  },
+};
+
+export default function AIAssistant({ reportData, weatherState, onNavigate }) {
   const [explanation, setExplanation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorNotice, setErrorNotice] = useState(null);
@@ -23,6 +162,7 @@ export default function AIAssistant({ reportData, weatherState }) {
   const [selectedVoiceURI, setSelectedVoiceURI] = useState('auto');
   const [speechRate, setSpeechRate] = useState(0.95);
   const [availableVoices, setAvailableVoices] = useState([]);
+  const [showDetailedSections, setShowDetailedSections] = useState(true);
 
   const isCancelledRef = useRef(false);
   const activeChunkIndexRef = useRef(0);
@@ -41,20 +181,16 @@ export default function AIAssistant({ reportData, weatherState }) {
     setIsSpeaking(false);
   };
 
-  // Load available English voices asynchronously
+  // Load available English voices
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
     const updateVoices = () => {
-      const voices = getAvailableEnglishVoices();
-      setAvailableVoices(voices);
+      setAvailableVoices(getAvailableEnglishVoices());
     };
-
     updateVoices();
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = updateVoices;
     }
-
     return () => {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.onvoiceschanged = null;
@@ -62,14 +198,11 @@ export default function AIAssistant({ reportData, weatherState }) {
     };
   }, []);
 
-  // Cleanup speech synthesis on component unmount
+  // Cleanup on unmount or reportData change
   useEffect(() => {
-    return () => {
-      stopSpeech();
-    };
+    return () => stopSpeech();
   }, []);
 
-  // Stop active speech if explanation changes or regenerated
   useEffect(() => {
     stopSpeech();
   }, [explanation]);
@@ -83,7 +216,6 @@ export default function AIAssistant({ reportData, weatherState }) {
 
   const handleGenerate = async (overrideKey = activeCustomKey) => {
     if (!reportData || reportData.crop_mismatch) return;
-
     stopSpeech();
     setLoading(true);
     setErrorNotice(null);
@@ -119,7 +251,6 @@ export default function AIAssistant({ reportData, weatherState }) {
       setIsSpeaking(false);
       return;
     }
-
     const chunkText = chunks[activeChunkIndexRef.current];
     if (!chunkText) {
       setIsSpeaking(false);
@@ -127,17 +258,13 @@ export default function AIAssistant({ reportData, weatherState }) {
     }
 
     const utterance = new SpeechSynthesisUtterance(chunkText);
-    if (voice) {
-      utterance.voice = voice;
-    }
+    if (voice) utterance.voice = voice;
     utterance.rate = rate;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
     utterance.onstart = () => {
-      if (!isCancelledRef.current) {
-        setIsSpeaking(true);
-      }
+      if (!isCancelledRef.current) setIsSpeaking(true);
     };
 
     utterance.onend = () => {
@@ -166,620 +293,1175 @@ export default function AIAssistant({ reportData, weatherState }) {
   };
 
   const handleToggleSpeech = () => {
-    if (!speechSupported) {
-      return;
-    }
-
+    if (!speechSupported) return;
     if (isSpeaking) {
       stopSpeech();
       return;
     }
-
-    // Cancel any previous utterances before starting new speech
     stopSpeech();
     isCancelledRef.current = false;
 
-    // Build the clean, pronunciation-normalized farmer script dynamically
     const script = buildFarmerSpeechScript(explanation, reportData, weatherState);
     if (!script) return;
-
-    // Split into sentence-bounded chunks to avoid browser timeout while preserving words
     const chunks = splitIntoSpeechChunks(script, 220);
     if (!chunks || chunks.length === 0) return;
 
     chunksQueueRef.current = chunks;
     activeChunkIndexRef.current = 0;
-
     const voice = selectBestVoice(availableVoices, selectedVoiceURI);
     speakChunksSequentially(chunks, voice, speechRate);
   };
 
   if (!reportData || reportData.crop_mismatch) return null;
 
+  // Extract core diagnostic fields
+  const crop = reportData.predicted_crop || reportData.crop || 'Unknown';
+  const disease = reportData.disease || 'Unknown';
+  const diseaseConfidence = reportData.disease_confidence || 0;
+  const isHealthy = disease.toLowerCase() === 'healthy' || reportData.severity_status === 'healthy';
+  const severityVal = reportData.severity || (isHealthy ? 'Healthy' : (reportData.severity_status === 'not_explicitly_graded' ? 'General' : 'Assessed'));
+  const severityConfidence = reportData.severity_confidence;
+  const predictedYield = reportData.predicted_yield ?? reportData.yield?.predicted_yield;
+  const yieldRisk = reportData.yield_risk || reportData.yield?.yield_risk || 'Low';
+  const overallRisk = reportData.overall_risk || 'Low';
+
+  // Sections & Knowledge Sources
+  const sections = explanation?.explanation_sections || {};
+  const sources = explanation?.sources || [];
+  const hasSections = sections && typeof sections === 'object' && Object.keys(sections).length > 0;
+
+  // Causative pathogen details
+  const pathogen = sections.causative_pathogen || {};
+  const sciName = pathogen.scientific_name || '';
+  const pathogenType = pathogen.pathogen_type || 'Fungus';
+  const taxonomy = pathogen.taxonomic_order_family || '';
+
+  // Weather parameters
+  const weatherData = weatherState?.status === 'success' ? weatherState.data : null;
+  const humidityVal = weatherData?.humidity ?? 82;
+  const tempVal = weatherData?.temperature ?? 27.4;
+
+  // Environmental triggers from knowledge base
+  const favorable = sections.favorable_conditions || {};
+  const humidityDesc = typeof favorable === 'string'
+    ? favorable
+    : (favorable.humidity_moisture || 'high-moisture conditions with restricted air circulation that favor fungal sporulation');
+
+  // "Why it develops" explanation text
+  const whyItDevelopsText = typeof favorable === 'object' && favorable.key_triggers && Array.isArray(favorable.key_triggers)
+    ? favorable.key_triggers.join(', ')
+    : (typeof favorable === 'string'
+      ? favorable
+      : `The ${pathogenType.toLowerCase()} typically develops under persistent high relative humidity and restricted air circulation, producing characteristic spots on foliage.`);
+
+  // Farm context
+  const farmCtx = reportData.farm_context || {};
+  const hasFarmData = Boolean(farmCtx.fertilizer || farmCtx.n || farmCtx.p || farmCtx.k);
+
+  // Symptoms and Management lists
+  const symptomsList = explanation?.what_to_monitor && explanation.what_to_monitor.length > 0
+    ? explanation.what_to_monitor
+    : [
+      'Check for pale green to light yellow chlorotic spots on the upper leaf surface.',
+      'Monitor relative humidity levels to ensure they stay below 85% to inhibit further fungal germination.',
+      'Inspect older lower foliage and under-canopy where infections typically begin.',
+    ];
+
+  const managementList = explanation?.next_steps && explanation.next_steps.length > 0
+    ? explanation.next_steps
+    : [
+      'Remove and safely dispose of infected lower leaves at first detection during warm, dry midday hours.',
+      'Apply protectant fungicides or bio-fungicides adhering to product labels and regional extension guidance.',
+      'Sanitize greenhouse trellises, benches, and cutting tools between crop cycles.',
+    ];
+
+  // Severity indicator position (0% - 100%)
+  const severityPercent = isHealthy
+    ? 0
+    : severityVal.toLowerCase() === 'mild'
+      ? 20
+      : severityVal.toLowerCase() === 'severe'
+        ? 85
+        : 45;
+
+  // Source Badge determination
+  const isFallback = explanation?.isFallback || explanation?.is_fallback;
+  const usedModel = explanation?.usedModel || explanation?.used_model || 'gemini-3.5-flash-lite';
+
   return (
-    <div
-      className="bg-white animate-panel-in"
-      style={{
-        borderRadius: '16px',
-        padding: '1.5rem',
-        border: '1px solid var(--border-card)',
-        boxShadow: 'var(--shadow-sm)',
-        marginBottom: '1.5rem',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          marginBottom: '1.25rem',
-          paddingBottom: '0.85rem',
-          borderBottom: '1px solid var(--border-subtle)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div
+    <div className="report-enhanced-container">
+
+      {/* ═══════ AI CONTROLS BAR ═══════ */}
+      <div className="report-ai-controls-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          {/* Engine Badge */}
+          <span
+            className="card-badge font-mono"
             style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '9px',
-              backgroundColor: 'var(--forest-950)',
-              color: 'var(--leaf-300)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              backgroundColor: isFallback ? '#fff7ed' : '#f0fdf4',
+              color: isFallback ? '#c2410c' : '#15803d',
+              border: `1px solid ${isFallback ? '#fed7aa' : '#bbf7d0'}`,
+              fontSize: '0.725rem',
+              fontWeight: '700',
             }}
           >
-            <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: 'var(--forest-950)' }}>
-              CropLens AI Assistant
-            </h3>
-            <TextReveal
-              text="Understand your crop result in simple language."
-              as="span"
-              delay={0.1}
-              duration={0.35}
-              style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}
-            />
-          </div>
-        </div>
+            {isFallback ? 'Grounded Agricultural Knowledge Base' : `AI Engine: ${usedModel}`}
+          </span>
 
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* Status Badge */}
-          {explanation?.isFallback ? (
-            <span
-              className="card-badge font-mono"
-              style={{ backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', fontSize: '0.7rem' }}
-            >
-              Basic Mode
-            </span>
-          ) : explanation?.usedCustomKey ? (
-            <span
-              className="card-badge font-mono"
-              style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', fontSize: '0.7rem' }}
-            >
-              Gemini Connected (Custom Key)
-            </span>
-          ) : (
-            <span
-              className="card-badge font-mono"
-              style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', fontSize: '0.7rem' }}
-            >
-              Gemini Connected ({explanation?.usedModel || GEMINI_MODEL})
-            </span>
-          )}
-
-          {/* Language Selector Indicator */}
+          {/* Language Indicator */}
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              backgroundColor: 'var(--warm-100)',
+              backgroundColor: '#f3f4f6',
               borderRadius: '8px',
               padding: '2px',
-              border: '1px solid var(--warm-200)',
+              border: '1px solid #e5e7eb',
               fontSize: '0.75rem',
             }}
           >
-            <span
-              style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: '6px',
-                backgroundColor: 'white',
-                fontWeight: '700',
-                color: 'var(--forest-950)',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-              }}
-            >
+            <span style={{ padding: '0.2rem 0.5rem', borderRadius: '6px', backgroundColor: '#ffffff', fontWeight: '700', color: 'var(--forest-950)' }}>
               English
             </span>
             <span
-              title="Telugu translation coming soon in next release"
-              style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: '6px',
-                color: 'var(--earth-muted)',
-                cursor: 'not-allowed',
-                opacity: 0.6,
-              }}
+              title="Telugu translation coming soon"
+              style={{ padding: '0.2rem 0.5rem', borderRadius: '6px', color: '#9ca3af', cursor: 'not-allowed' }}
             >
-              తెలుగు (Coming Soon)
+              తెలుగు (Soon)
             </span>
           </div>
+        </div>
 
-          {/* Voice Playback & Audio Controls */}
-          {speechSupported ? (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-              {/* Listen / Stop Button */}
-              <button
-                type="button"
-                className="btn-tap"
-                aria-label={isSpeaking ? 'Stop AI voice playback' : 'Listen to AI explanation with speech synthesis'}
-                disabled={loading || !explanation}
-                onClick={handleToggleSpeech}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.4rem 0.85rem',
-                  fontSize: '0.8125rem',
-                  fontWeight: '700',
-                  borderRadius: '8px',
-                  border: isSpeaking ? '1px solid #fca5a5' : '1px solid #bbf7d0',
-                  backgroundColor: isSpeaking ? '#fee2e2' : '#f0fdf4',
-                  color: isSpeaking ? '#b91c1c' : '#15803d',
-                  cursor: loading || !explanation ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {isSpeaking ? (
-                  <>
-                    <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#dc2626', borderRadius: '2px' }}></span>
-                    <span>⏹ Stop</span>
-                  </>
-                ) : (
-                  <>
-                    <span>🔊 Listen</span>
-                  </>
-                )}
-              </button>
-
-              {/* Voice Selector */}
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  backgroundColor: 'var(--warm-100)',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '8px',
-                  border: '1px solid var(--warm-200)',
-                  fontSize: '0.75rem',
-                }}
-              >
-                <label htmlFor="ai-voice-select" style={{ color: 'var(--text-muted)', fontWeight: '600', cursor: 'pointer' }}>
-                  Voice:
-                </label>
-                <select
-                  id="ai-voice-select"
-                  aria-label="Select English voice for speech synthesis"
-                  value={selectedVoiceURI}
-                  onChange={(e) => setSelectedVoiceURI(e.target.value)}
-                  style={{
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    fontSize: '0.75rem',
-                    fontWeight: '700',
-                    color: 'var(--forest-950)',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    maxWidth: '150px',
-                  }}
-                >
-                  <option value="auto">Auto (Best English)</option>
-                  {availableVoices.map((v) => (
-                    <option key={v.voiceURI} value={v.voiceURI}>
-                      {v.name} ({v.lang})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Speed Selector */}
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  backgroundColor: 'var(--warm-100)',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '8px',
-                  border: '1px solid var(--warm-200)',
-                  fontSize: '0.75rem',
-                }}
-              >
-                <label htmlFor="ai-speed-select" style={{ color: 'var(--text-muted)', fontWeight: '600', cursor: 'pointer' }}>
-                  Speed:
-                </label>
-                <select
-                  id="ai-speed-select"
-                  aria-label="Select speech playback speed"
-                  value={speechRate}
-                  onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
-                  style={{
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    fontSize: '0.75rem',
-                    fontWeight: '700',
-                    color: 'var(--forest-950)',
-                    cursor: 'pointer',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="0.9">0.9x</option>
-                  <option value="0.95">0.95x (Default)</option>
-                  <option value="1.0">1.0x</option>
-                  <option value="1.1">1.1x</option>
-                </select>
-              </div>
-            </div>
-          ) : (
-            <span
-              className="font-mono"
-              style={{ fontSize: '0.75rem', color: 'var(--earth-muted)', backgroundColor: 'var(--warm-100)', padding: '0.3rem 0.6rem', borderRadius: '6px' }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* Audio Listen / Stop */}
+          {speechSupported && (
+            <button
+              type="button"
+              className="btn-tap"
+              aria-label={isSpeaking ? 'Stop voice readout' : 'Listen to report'}
+              disabled={loading || !explanation}
+              onClick={handleToggleSpeech}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                borderRadius: '8px',
+                border: isSpeaking ? '1px solid #fca5a5' : '1px solid #bbf7d0',
+                backgroundColor: isSpeaking ? '#fee2e2' : '#f0fdf4',
+                color: isSpeaking ? '#b91c1c' : '#15803d',
+                cursor: loading || !explanation ? 'not-allowed' : 'pointer',
+              }}
             >
-              Voice unavailable in this browser
-            </span>
+              {isSpeaking ? (
+                <>
+                  <Square style={{ width: '13px', height: '13px', fill: '#dc2626', color: '#dc2626' }} />
+                  <span>Stop</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 style={{ width: '15px', height: '15px' }} />
+                  <span>Listen</span>
+                </>
+              )}
+            </button>
           )}
 
+          {/* Voice Selector */}
+          {speechSupported && availableVoices.length > 0 && (
+            <select
+              aria-label="Select voice"
+              value={selectedVoiceURI}
+              onChange={(e) => setSelectedVoiceURI(e.target.value)}
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                padding: '0.3rem 0.5rem',
+                backgroundColor: '#ffffff',
+                color: 'var(--forest-950)',
+                cursor: 'pointer',
+                maxWidth: '130px',
+              }}
+            >
+              <option value="auto">Auto Voice</option>
+              {availableVoices.map((v) => (
+                <option key={v.voiceURI} value={v.voiceURI}>
+                  {v.name.slice(0, 16)}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Speed Selector */}
+          {speechSupported && (
+            <select
+              aria-label="Speech speed"
+              value={speechRate}
+              onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                padding: '0.3rem 0.5rem',
+                backgroundColor: '#ffffff',
+                color: 'var(--forest-950)',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="0.9">0.9x</option>
+              <option value="0.95">0.95x</option>
+              <option value="1.0">1.0x</option>
+              <option value="1.1">1.1x</option>
+            </select>
+          )}
+
+          {/* Connect Key Button */}
           <button
             type="button"
-            className="btn-secondary-hero btn-tap"
-            style={{ padding: '0.4rem 0.75rem', fontSize: '0.8125rem', borderRadius: '8px' }}
+            className="btn-tap"
             onClick={() => setShowKeyPanel(!showKeyPanel)}
+            style={{
+              padding: '0.35rem 0.75rem',
+              fontSize: '0.8rem',
+              fontWeight: '700',
+              borderRadius: '8px',
+              border: '1px solid rgba(11, 43, 26, 0.15)',
+              backgroundColor: '#ffffff',
+              color: 'var(--forest-950)',
+              cursor: 'pointer',
+            }}
           >
-            {activeCustomKey ? 'Key Connected' : 'Connect Your Gemini API Key'}
+            <Key style={{ width: '13px', height: '13px', display: 'inline', marginRight: '4px' }} />
+            {activeCustomKey ? 'Key Connected' : 'API Key'}
           </button>
 
+          {/* Regenerate Button */}
           <button
             type="button"
-            className="btn-secondary-hero btn-tap"
+            className="btn-tap"
             disabled={loading}
-            style={{ padding: '0.4rem 0.875rem', fontSize: '0.8125rem', borderRadius: '8px' }}
             onClick={() => handleGenerate(activeCustomKey)}
+            style={{
+              padding: '0.35rem 0.75rem',
+              fontSize: '0.8rem',
+              fontWeight: '700',
+              borderRadius: '8px',
+              border: '1px solid #bbf7d0',
+              backgroundColor: '#f0fdf4',
+              color: '#15803d',
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
           >
-            {loading ? 'Analyzing...' : 'Regenerate'}
+            <RefreshCw style={{ width: '13px', height: '13px', display: 'inline', marginRight: '4px' }} className={loading ? 'animate-spin' : ''} />
+            {loading ? 'Analyzing...' : 'Refresh'}
           </button>
         </div>
       </div>
 
-      {/* Optional BYOK API Key Panel */}
+      {/* Key Input Dropdown Panel */}
       {showKeyPanel && (
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
           style={{
-            backgroundColor: 'var(--warm-50)',
-            border: '1px solid var(--warm-300)',
-            borderRadius: '12px',
+            backgroundColor: '#ffffff',
+            border: '1px solid rgba(11, 43, 26, 0.15)',
+            borderRadius: '14px',
             padding: '1.25rem',
             marginBottom: '1.5rem',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h4 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: '700', color: 'var(--forest-950)' }}>
-              Connect Your Gemini API Key
+            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: 'var(--forest-950)' }}>
+              Custom Gemini API Key
             </h4>
-            <span
-              className="font-mono"
-              style={{ fontSize: '0.75rem', color: 'var(--earth-muted)', backgroundColor: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid var(--warm-200)' }}
-            >
-              Optional — for extended AI consultation
+            <span style={{ fontSize: '0.725rem', color: '#6b7280' }}>
+              Transmitted securely via request header only
             </span>
           </div>
-
-          <p style={{ fontSize: '0.8125rem', color: 'var(--forest-900)', margin: '0 0 0.875rem 0', lineHeight: '1.45' }}>
-            Your key is kept only in temporary session memory, never saved to storage, never logged, and never sent to our ML server.
-          </p>
-
-          <form onSubmit={handleApplyCustomKey} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <form onSubmit={handleApplyCustomKey} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <input
               type="password"
-              placeholder="Paste your Gemini API key (AIzaSy...)"
+              placeholder="Paste Gemini API key (AIzaSy...)"
               value={customKeyInput}
               onChange={(e) => setCustomKeyInput(e.target.value)}
               style={{
                 flex: '1',
-                minWidth: '240px',
-                padding: '0.5rem 0.875rem',
+                minWidth: '220px',
+                padding: '0.5rem 0.75rem',
                 borderRadius: '8px',
-                border: '1px solid var(--warm-300)',
-                fontSize: '0.875rem',
-                backgroundColor: 'white',
+                border: '1px solid #d1d5db',
+                fontSize: '0.85rem',
               }}
             />
             <button
               type="submit"
-              className="btn-primary-hero btn-tap"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.8125rem', borderRadius: '8px' }}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: '#16a34a',
+                color: '#ffffff',
+                fontWeight: '700',
+                fontSize: '0.8125rem',
+                cursor: 'pointer',
+              }}
             >
-              Use Custom Key
+              Apply Key
             </button>
             {activeCustomKey && (
               <button
                 type="button"
-                className="btn-secondary-hero btn-tap"
                 onClick={handleClearCustomKey}
-                style={{ padding: '0.5rem 1rem', fontSize: '0.8125rem', borderRadius: '8px', color: '#b91c1c' }}
+                style={{
+                  padding: '0.5rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1px solid #fecaca',
+                  backgroundColor: '#fef2f2',
+                  color: '#dc2626',
+                  fontWeight: '700',
+                  fontSize: '0.8125rem',
+                  cursor: 'pointer',
+                }}
               >
-                Clear Key
+                Clear
               </button>
             )}
           </form>
-        </div>
+        </motion.div>
       )}
 
-      {/* Loading State */}
-      {loading && (
-        <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
-          <div
-            className="status-dot green pulse"
-            style={{ width: '12px', height: '12px', margin: '0 auto 0.75rem' }}
-          ></div>
-          <span style={{ fontSize: '0.9375rem', color: 'var(--forest-900)', fontWeight: '600' }}>
-            CropLens AI Assistant is synthesizing ML results &amp; environmental context...
-          </span>
-        </div>
-      )}
-
-      {/* Main Content */}
-      {!loading && explanation && (
-        <div>
-          {/* Fallback Notice Banner if applicable */}
-          {explanation.isFallback && (
-            <div
-              style={{
-                backgroundColor: '#fff7ed',
-                border: '1px solid #fed7aa',
-                borderRadius: '12px',
-                padding: '0.875rem 1rem',
-                marginBottom: '1.25rem',
-                fontSize: '0.8125rem',
-                color: '#9a3412',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.625rem',
-              }}
-            >
-              <svg style={{ width: '20px', height: '20px', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <div>
-                <strong>Gemini is temporarily unavailable. Showing a grounded basic explanation from the ML result.</strong>
-                {explanation.fallbackReason && (
-                  <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.85, marginTop: '2px' }}>
-                    Reason: {explanation.fallbackReason}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Prominent Warning Box for Low Confidence or Critical Alerts */}
-          {explanation.warning && (
-            <div
-              style={{
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fca5a5',
-                borderRadius: '14px',
-                padding: '1rem 1.25rem',
-                marginBottom: '1.25rem',
-                display: 'flex',
-                gap: '0.75rem',
-                alignItems: 'flex-start',
-              }}
-            >
-              <div style={{ color: '#dc2626', flexShrink: 0, marginTop: '2px' }}>
-                <svg style={{ width: '20px', height: '20px', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h4 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: '700', color: '#991b1b' }}>
-                  Diagnostic Advisory
-                </h4>
-                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#7f1d1d', lineHeight: '1.45' }}>
-                  {explanation.warning}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Summary */}
-          <div style={{ marginBottom: '1.25rem' }}>
-            <h4
-              style={{
-                fontSize: '0.8125rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--earth-muted)',
-                fontWeight: '700',
-                margin: '0 0 0.375rem 0',
-              }}
-            >
-              Summary
-            </h4>
-            <TextEffect
-              key={`summary-${explanation?.summary}`}
-              per="word"
-              preset="fade"
-              as="p"
-              style={{
-                fontSize: '1rem',
-                fontWeight: '600',
-                color: 'var(--forest-950)',
-                margin: 0,
-                lineHeight: '1.5',
-              }}
-            >
-              {explanation.summary}
-            </TextEffect>
+      {/* Fallback Warning Banner if applicable */}
+      {isFallback && explanation?.fallbackReason && (
+        <div
+          style={{
+            backgroundColor: '#fff7ed',
+            border: '1px solid #fed7aa',
+            borderRadius: '12px',
+            padding: '0.85rem 1.15rem',
+            marginBottom: '1.25rem',
+            fontSize: '0.8125rem',
+            color: '#9a3412',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+          }}
+        >
+          <Info style={{ width: '18px', height: '18px', flexShrink: 0, color: '#ea580c' }} />
+          <div>
+            <strong>Grounded Agricultural Knowledge Base Active</strong>
+            <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.9, marginTop: '2px' }}>
+              Reason: {explanation.fallbackReason}
+            </span>
           </div>
-
-          {/* What This Means */}
-          <div style={{ marginBottom: '1.25rem' }}>
-            <h4
-              style={{
-                fontSize: '0.8125rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--earth-muted)',
-                fontWeight: '700',
-                margin: '0 0 0.375rem 0',
-              }}
-            >
-              What This Means
-            </h4>
-            <TextEffect
-              key={`means-${explanation?.what_it_means}`}
-              per="word"
-              preset="fade"
-              as="p"
-              delay={0.12}
-              style={{
-                fontSize: '0.9375rem',
-                color: 'var(--forest-900)',
-                margin: 0,
-                lineHeight: '1.55',
-              }}
-            >
-              {explanation.what_it_means}
-            </TextEffect>
-          </div>
-
-          {/* 2-Column Grid: What To Monitor & Next Steps (Sequenced After Text) */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '1.25rem',
-              marginTop: '1.25rem',
-            }}
-          >
-            {/* What To Monitor */}
-            <div
-              style={{
-                backgroundColor: 'var(--warm-50)',
-                padding: '1.125rem',
-                borderRadius: '14px',
-                border: '1px solid var(--warm-200)',
-              }}
-            >
-              <h5
-                style={{
-                  margin: '0 0 0.75rem 0',
-                  fontSize: '0.875rem',
-                  fontWeight: '700',
-                  color: 'var(--forest-950)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                <svg style={{ width: '18px', height: '18px', flexShrink: 0, color: 'var(--leaf-600)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                What To Monitor
-              </h5>
-              <MagicText
-                mode="list"
-                items={explanation.what_to_monitor && explanation.what_to_monitor.length > 0 ? explanation.what_to_monitor : ['Monitor foliage condition and soil moisture regularly.']}
-                resetKey={explanation}
-              />
-            </div>
-
-            {/* Next Steps */}
-            <div
-              style={{
-                backgroundColor: 'var(--warm-50)',
-                padding: '1.125rem',
-                borderRadius: '14px',
-                border: '1px solid var(--warm-200)',
-              }}
-            >
-              <h5
-                style={{
-                  margin: '0 0 0.75rem 0',
-                  fontSize: '0.875rem',
-                  fontWeight: '700',
-                  color: 'var(--forest-950)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                <svg style={{ width: '18px', height: '18px', flexShrink: 0, color: 'var(--leaf-600)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                Next Steps
-              </h5>
-              <MagicText
-                mode="list"
-                items={explanation.next_steps && explanation.next_steps.length > 0 ? explanation.next_steps : ['Follow standard cultural and sanitation best practices.']}
-                resetKey={explanation}
-              />
-            </div>
-          </motion.div>
         </div>
       )}
 
+      {/* Critical Diagnostic Advisory Banner if present */}
+      {explanation?.warning && (
+        <div
+          style={{
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fca5a5',
+            borderRadius: '14px',
+            padding: '1rem 1.25rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            gap: '0.75rem',
+            alignItems: 'flex-start',
+          }}
+        >
+          <AlertTriangle style={{ width: '20px', height: '20px', color: '#dc2626', flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <h4 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: '800', color: '#991b1b' }}>
+              Diagnostic Advisory
+            </h4>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#7f1d1d', lineHeight: '1.45' }}>
+              {explanation.warning}
+            </p>
+          </div>
+        </div>
+      )}
 
-      {/* Footer Disclaimer */}
-      <div style={{ marginTop: '1.25rem', paddingTop: '0.875rem', borderTop: '1px solid var(--warm-200)' }}>
-        <p style={{ margin: 0, fontSize: '0.775rem', color: 'var(--earth-muted)', lineHeight: '1.4' }}>
-          Disclaimer: CropLens AI Assistant provides non-chemical guidance to explain ML model outputs. It does not replace field inspection by a certified agronomic specialist.
-        </p>
+      {/* ═══════ 1. DIAGNOSTIC SUMMARY HEADING ═══════ */}
+      <div className="report-section-header">
+        <h2 className="report-section-title">
+          Diagnostic Summary
+        </h2>
+        <div className="report-title-line" />
       </div>
+
+      {/* ═══════ 2. PROMINENT ROUNDED SUMMARY BANNER (Reference 1) ═══════ */}
+      <motion.div {...cardFadeUp(0.05)} className="report-summary-panel">
+        {renderHighlightedSummary(explanation?.summary, {
+          crop,
+          disease,
+          pathogenName: sciName,
+          confidence: diseaseConfidence,
+          severity: severityVal,
+          predictedYield,
+          yieldRisk,
+          isHealthy,
+        })}
+      </motion.div>
+
+      {/* ═══════ 3. FIVE METRIC CARDS ROW (Reference 1) ═══════ */}
+      <div className="report-metrics-row">
+        {/* Card 1: Crop */}
+        <motion.div {...cardFadeUp(0.1)} className="report-metric-card">
+          <div className="report-metric-icon-box">
+            <Sprout style={{ width: '18px', height: '18px' }} />
+          </div>
+          <div>
+            <div className="report-metric-label">Crop</div>
+            <div className="report-metric-value">{crop}</div>
+          </div>
+          <div className="report-metric-sub">Observed Specimen</div>
+        </motion.div>
+
+        {/* Card 2: Disease */}
+        <motion.div {...cardFadeUp(0.15)} className="report-metric-card">
+          <div className="report-metric-icon-box">
+            <Sun style={{ width: '18px', height: '18px' }} />
+          </div>
+          <div>
+            <div className="report-metric-label">Disease</div>
+            <div className="report-metric-value" style={{ fontSize: disease.length > 14 ? '1.1rem' : '1.25rem' }}>
+              {disease}
+            </div>
+          </div>
+          <div className="report-metric-sub">
+            {diseaseConfidence.toFixed(1)}% confidence
+          </div>
+        </motion.div>
+
+        {/* Card 3: Severity */}
+        <motion.div {...cardFadeUp(0.2)} className="report-metric-card">
+          <div className="report-metric-icon-box">
+            <Gauge style={{ width: '18px', height: '18px' }} />
+          </div>
+          <div>
+            <div className="report-metric-label">Severity</div>
+            <div style={{ marginTop: '0.2rem' }}>
+              <span className={`report-pill-badge ${
+                isHealthy
+                  ? 'pill-green'
+                  : severityVal.toLowerCase() === 'mild'
+                    ? 'pill-green'
+                    : severityVal.toLowerCase() === 'severe'
+                      ? 'pill-red'
+                      : 'pill-amber'
+              }`}>
+                {severityVal}
+              </span>
+            </div>
+          </div>
+          <div className="report-metric-sub">
+            {severityConfidence ? `${severityConfidence.toFixed(1)}% certainty` : 'Stage assessed'}
+          </div>
+        </motion.div>
+
+        {/* Card 4: Expected Yield */}
+        <motion.div {...cardFadeUp(0.25)} className="report-metric-card">
+          <div className="report-metric-icon-box">
+            <BarChart2 style={{ width: '18px', height: '18px' }} />
+          </div>
+          <div>
+            <div className="report-metric-label">Expected Yield</div>
+            <div className="report-metric-value">
+              {predictedYield != null ? `${predictedYield} t/ha` : 'N/A'}
+            </div>
+          </div>
+          <div className="report-metric-sub">Soil/Climate Regressor</div>
+        </motion.div>
+
+        {/* Card 5: Yield Risk */}
+        <motion.div {...cardFadeUp(0.3)} className="report-metric-card">
+          <div className="report-metric-icon-box">
+            <Shield style={{ width: '18px', height: '18px' }} />
+          </div>
+          <div>
+            <div className="report-metric-label">Yield Risk</div>
+            <div style={{ marginTop: '0.2rem' }}>
+              <span className={`report-pill-badge ${
+                yieldRisk.toLowerCase() === 'high'
+                  ? 'pill-red'
+                  : yieldRisk.toLowerCase() === 'medium'
+                    ? 'pill-amber'
+                    : 'pill-green'
+              }`}>
+                {yieldRisk}
+              </span>
+            </div>
+          </div>
+          <div className="report-metric-sub">Multi-signal synthesis</div>
+        </motion.div>
+      </div>
+
+      {/* ═══════ 4. WHAT THIS MEANS (Reference 1) ═══════ */}
+      <motion.div {...cardFadeUp(0.35)} className="report-means-card">
+        {/* Header */}
+        <div className="report-means-header">
+          <div className="report-means-icon-circle">
+            <Info style={{ width: '15px', height: '15px' }} />
+          </div>
+          <h3 className="report-means-title">What this means</h3>
+        </div>
+
+        {/* Subtitle */}
+        <div className="report-means-subtitle">
+          {isHealthy
+            ? `Your ${crop} crop foliage is diagnosed as healthy with no active infection detected.`
+            : `Your ${crop} crop has an ${severityVal.toLowerCase()}-stage ${disease} infection, graded ${severityVal}.`}
+        </div>
+
+        {/* 4 Inner Distinct Information Cards */}
+        <div className="report-means-grid">
+          {/* Card A: The infection */}
+          <div className="report-inner-card">
+            <div className="report-inner-header">
+              <div className="report-inner-icon-box">
+                <Sun style={{ width: '16px', height: '16px' }} />
+              </div>
+              <h4 className="report-inner-title">The infection</h4>
+            </div>
+            <p className="report-inner-text">
+              {isHealthy
+                ? `Confirmed healthy ${crop} tissue. No active chlorosis, foliar lesions, or mycelial growth detected.`
+                : `${severityVal}-stage infection of ${crop} ${disease}, caused by the ${pathogenType.toLowerCase()} ${sciName || disease}${taxonomy ? ` (taxonomic category: ${taxonomy})` : ''}.`}
+            </p>
+          </div>
+
+          {/* Card B: Severity */}
+          <div className="report-inner-card">
+            <div className="report-inner-header">
+              <div className="report-inner-icon-box">
+                <Gauge style={{ width: '16px', height: '16px' }} />
+              </div>
+              <h4 className="report-inner-title">Severity</h4>
+            </div>
+            <p className="report-inner-text">
+              {isHealthy
+                ? 'Disease grading is not applicable (0% disease progression). Vegetative photosynthesis is operating normally.'
+                : `The machine learning model confirms a ${severityVal.toLowerCase()} severity grade (${severityConfidence ? severityConfidence.toFixed(1) + '% confidence' : diseaseConfidence.toFixed(1) + '% confidence'}).`}
+            </p>
+          </div>
+
+          {/* Card C: Your environment */}
+          <div className="report-inner-card">
+            <div className="report-inner-header">
+              <div className="report-inner-icon-box">
+                <Droplets style={{ width: '16px', height: '16px' }} />
+              </div>
+              <h4 className="report-inner-title">Your environment</h4>
+            </div>
+            <div className="report-env-chips">
+              <div className="report-stat-chip">
+                <div className="report-stat-chip-val">{humidityVal}%</div>
+                <div className="report-stat-chip-lbl">relative humidity</div>
+              </div>
+              <div className="report-stat-chip">
+                <div className="report-stat-chip-val">{tempVal}°C</div>
+                <div className="report-stat-chip-lbl">ambient temperature</div>
+              </div>
+            </div>
+            <p className="report-inner-text">
+              {isHealthy
+                ? `Ambient readings provide favorable growth conditions for ${crop}. Continue routine canopy scouting.`
+                : `These readings closely align with the ${humidityDesc}.`}
+            </p>
+          </div>
+
+          {/* Card D: Missing data / Farm profile */}
+          <div className="report-inner-card">
+            <div className="report-inner-header">
+              <div className="report-inner-icon-box">
+                <AlertTriangle style={{ width: '16px', height: '16px' }} />
+              </div>
+              <h4 className="report-inner-title">
+                {hasFarmData ? 'Farm soil context' : 'Missing data'}
+              </h4>
+            </div>
+            <p className="report-inner-text">
+              {hasFarmData ? (
+                <>
+                  Supplied parameters: Fertilizer <strong>{farmCtx.fertilizer || 'N/A'} kg/ha</strong>, N: <strong>{farmCtx.n || 'N/A'}</strong>, P: <strong>{farmCtx.p || 'N/A'}</strong>, K: <strong>{farmCtx.k || 'N/A'}</strong>.
+                </>
+              ) : (
+                'Farm soil and fertilizer values were not supplied and are currently unavailable.'
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Highlighted Explanation Strip: Why it develops */}
+        <div className="report-develops-strip">
+          <Thermometer style={{ width: '18px', height: '18px', flexShrink: 0, color: '#d97706' }} />
+          <div>
+            <strong>Why it develops: </strong>
+            {whyItDevelopsText}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ═══════ 5. SYMPTOMS & MANAGEMENT SIDE-BY-SIDE (Reference 1) ═══════ */}
+      <div className="report-two-col-grid">
+        {/* Left: Symptoms to Monitor (Amber Theme) */}
+        <motion.div {...cardFadeUp(0.4)} className="report-side-card symptoms-card">
+          <div className="report-side-header">
+            <div className="report-side-icon-circle">
+              <Eye style={{ width: '17px', height: '17px' }} />
+            </div>
+            <h3 className="report-side-title">Symptoms to Monitor</h3>
+          </div>
+          <div className="report-numbered-list">
+            {symptomsList.map((item, idx) => (
+              <div key={idx} className="report-numbered-item">
+                <div className="report-number-badge">{idx + 1}</div>
+                <p className="report-numbered-text">{item}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Right: Recommended Management (Green Theme) */}
+        <motion.div {...cardFadeUp(0.45)} className="report-side-card management-card">
+          <div className="report-side-header">
+            <div className="report-side-icon-circle">
+              <ShieldCheck style={{ width: '17px', height: '17px' }} />
+            </div>
+            <h3 className="report-side-title">Recommended Management</h3>
+          </div>
+          <div className="report-numbered-list">
+            {managementList.map((item, idx) => (
+              <div key={idx} className="report-numbered-item">
+                <div className="report-number-badge">{idx + 1}</div>
+                <p className="report-numbered-text">{item}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ═══════ 6. COLLAPSIBLE BAR FOR DETAILED EXPLANATION ═══════ */}
+      <button
+        type="button"
+        className="report-collapse-bar"
+        onClick={() => setShowDetailedSections(!showDetailedSections)}
+        aria-expanded={showDetailedSections}
+      >
+        <div className="report-collapse-left">
+          <FileText style={{ width: '20px', height: '20px', color: '#16a34a' }} />
+          <div>
+            <div className="report-collapse-title">Detailed Disease-Specific Explanation</div>
+            <div className="report-collapse-sub">
+              Pathogen, conditions, transmission, prevention, severity interpretation &amp; expert advice triggers
+            </div>
+          </div>
+        </div>
+        <div className="report-collapse-btn">
+          {showDetailedSections ? (
+            <>
+              <span>Collapse</span>
+              <ChevronUp style={{ width: '15px', height: '15px' }} />
+            </>
+          ) : (
+            <>
+              <span>Expand</span>
+              <ChevronDown style={{ width: '15px', height: '15px' }} />
+            </>
+          )}
+        </div>
+      </button>
+
+      {/* ═══════ 7. DETAILED INFOGRAPHIC TIMELINE (Reference Design) ═══════ */}
+      <AnimatePresence>
+        {showDetailedSections && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.4, ease: EASE }}
+            style={{ overflow: 'hidden' }}
+          >
+            {/* Centered Heading */}
+            <div className="report-section-header" style={{ marginBottom: '2.5rem' }}>
+              <span className="report-section-kicker">04 — DEEP DIVE</span>
+              <h2 className="report-section-title">
+                Detailed Disease–Specific Explanation
+              </h2>
+              <div className="report-title-line" />
+              <p className="report-section-subtitle">
+                Pathogen, conditions, transmission, prevention, severity interpretation and expert advice triggers
+              </p>
+              <div className="report-identity-pill">
+                <span>{crop}</span>
+                <span>•</span>
+                <span>{disease}</span>
+                {sciName ? (
+                  <>
+                    <span>•</span>
+                    <span style={{ fontStyle: 'italic' }}>{sciName}</span>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Vertical Connected Infographic Timeline */}
+            <div className="report-timeline-container">
+              {/* Continuous vertical drawing timeline line */}
+              <div className="report-timeline-line-track">
+                <motion.div
+                  className="report-timeline-line-progress"
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ duration: 1.1, ease: EASE, delay: 0.15 }}
+                />
+              </div>
+
+              {/* Sequential Timeline Items */}
+              <motion.div
+                variants={timelineContainerVariants}
+                initial="hidden"
+                animate="visible"
+                style={{ display: 'flex', flexDirection: 'column' }}
+              >
+
+                {/* 01 – Disease Overview */}
+                <motion.div variants={timelineCardVariants} className="report-timeline-row">
+                  <div className="report-timeline-node-dot" />
+                  <motion.div variants={badgeVariants} className="report-timeline-badge">
+                    01
+                  </motion.div>
+                  <div className="report-timeline-card">
+                    <div className="report-timeline-card-main">
+                      <h4 className="report-timeline-card-title">Disease Overview</h4>
+                      {sciName && (
+                        <div className="report-timeline-tags">
+                          <span className="report-timeline-tag tag-green">
+                            Pathogen: <em style={{ marginLeft: '4px' }}>{sciName}</em>
+                          </span>
+                          {pathogenType && (
+                            <span className="report-timeline-tag tag-green">{pathogenType}</span>
+                          )}
+                          {taxonomy && (
+                            <span className="report-timeline-tag tag-green">{taxonomy}</span>
+                          )}
+                        </div>
+                      )}
+                      <p className="report-timeline-text">
+                        {typeof sections.disease_overview === 'string' && sections.disease_overview.trim()
+                          ? sections.disease_overview
+                          : `${crop} ${disease} is a destructive foliar and fruit condition affecting ${crop.toLowerCase()} canopies. Prompt identification and environmental management mitigate defoliation, blossom blight, and severe yield reductions.`}
+                      </p>
+                    </div>
+                    <motion.div variants={iconBadgeVariants} className="report-timeline-icon-box" style={{ '--icon-theme': '#16a34a' }}>
+                      <FileText style={{ width: '18px', height: '18px' }} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* 02 – Favorable Conditions */}
+                <motion.div variants={timelineCardVariants} className="report-timeline-row">
+                  <div className="report-timeline-node-dot" />
+                  <motion.div variants={badgeVariants} className="report-timeline-badge">
+                    02
+                  </motion.div>
+                  <div className="report-timeline-card">
+                    <div className="report-timeline-card-main">
+                      <h4 className="report-timeline-card-title">Favorable Conditions</h4>
+                      {/* Dynamic condition tag chips */}
+                      <div className="report-timeline-tags">
+                        {sections.favorable_conditions?.temperature_range && (
+                          <span className="report-timeline-tag tag-blue">{sections.favorable_conditions.temperature_range}</span>
+                        )}
+                        <span className="report-timeline-tag tag-blue">Humidity &gt;85%</span>
+                        <span className="report-timeline-tag tag-blue">Long leaf wetness</span>
+                        <span className="report-timeline-tag tag-blue">Dense canopy</span>
+                        <span className="report-timeline-tag tag-blue">Restricted airflow</span>
+                      </div>
+                      <div className="report-timeline-text">
+                        {typeof sections.favorable_conditions === 'string' ? (
+                          <p style={{ margin: 0 }}>{sections.favorable_conditions}</p>
+                        ) : (
+                          <>
+                            {sections.favorable_conditions?.humidity_moisture && (
+                              <p style={{ margin: '0 0 0.35rem 0' }}>{sections.favorable_conditions.humidity_moisture}</p>
+                            )}
+                            {sections.favorable_conditions?.soil_conditions && (
+                              <p style={{ margin: '0 0 0.35rem 0' }}>
+                                <strong style={{ color: 'var(--forest-950)' }}>Soil parameters: </strong>
+                                {sections.favorable_conditions.soil_conditions}
+                              </p>
+                            )}
+                            {!sections.favorable_conditions?.humidity_moisture && (
+                              <p style={{ margin: 0 }}>
+                                Persistent high relative humidity exceeding 85%, prolonged canopy dampness, and restricted air circulation in shaded canopies accelerate sporulation and tissue penetration.
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <motion.div variants={iconBadgeVariants} className="report-timeline-icon-box" style={{ '--icon-theme': '#2563eb' }}>
+                      <Thermometer style={{ width: '18px', height: '18px' }} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* 03 – Characteristic Symptoms */}
+                <motion.div variants={timelineCardVariants} className="report-timeline-row">
+                  <div className="report-timeline-node-dot" />
+                  <motion.div variants={badgeVariants} className="report-timeline-badge">
+                    03
+                  </motion.div>
+                  <div className="report-timeline-card">
+                    <div className="report-timeline-card-main">
+                      <h4 className="report-timeline-card-title">Characteristic Symptoms</h4>
+                      <ul className="report-timeline-bullets">
+                        {typeof sections.characteristic_symptoms === 'object' && sections.characteristic_symptoms ? (
+                          <>
+                            {sections.characteristic_symptoms.foliar_symptoms && (
+                              <li className="report-timeline-bullet-item">
+                                <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#d97706' }} />
+                                <span>
+                                  <strong>Foliar: </strong>
+                                  {Array.isArray(sections.characteristic_symptoms.foliar_symptoms)
+                                    ? sections.characteristic_symptoms.foliar_symptoms.join(' ')
+                                    : sections.characteristic_symptoms.foliar_symptoms}
+                                </span>
+                              </li>
+                            )}
+                            {sections.characteristic_symptoms.stem_and_fruit_symptoms && (
+                              <li className="report-timeline-bullet-item">
+                                <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#d97706' }} />
+                                <span>
+                                  <strong>Stem &amp; Fruit: </strong>
+                                  {Array.isArray(sections.characteristic_symptoms.stem_and_fruit_symptoms)
+                                    ? sections.characteristic_symptoms.stem_and_fruit_symptoms.join(' ')
+                                    : sections.characteristic_symptoms.stem_and_fruit_symptoms}
+                                </span>
+                              </li>
+                            )}
+                            {sections.characteristic_symptoms.progression && (
+                              <li className="report-timeline-bullet-item">
+                                <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#d97706' }} />
+                                <span>
+                                  <strong>Progression: </strong>
+                                  {sections.characteristic_symptoms.progression}
+                                </span>
+                              </li>
+                            )}
+                          </>
+                        ) : typeof sections.characteristic_symptoms === 'string' ? (
+                          <li className="report-timeline-bullet-item">
+                            <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#d97706' }} />
+                            <span>{sections.characteristic_symptoms}</span>
+                          </li>
+                        ) : (
+                          <>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#d97706' }} />
+                              <span><strong>Early: </strong>Pinpoint water-soaked or pale chlorotic spots on upper leaf surfaces.</span>
+                            </li>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#d97706' }} />
+                              <span><strong>Developing: </strong>Expanding lesions with necrotic centers, chlorotic margins, and dense sporulation underneath.</span>
+                            </li>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#d97706' }} />
+                              <span><strong>Severe: </strong>Extensive foliage blighting, rapid defoliation, and sunscald exposure on developing fruit.</span>
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+                    <motion.div variants={iconBadgeVariants} className="report-timeline-icon-box" style={{ '--icon-theme': '#d97706' }}>
+                      <Leaf style={{ width: '18px', height: '18px' }} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* 04 – Transmission & Spread */}
+                <motion.div variants={timelineCardVariants} className="report-timeline-row">
+                  <div className="report-timeline-node-dot" />
+                  <motion.div variants={badgeVariants} className="report-timeline-badge">
+                    04
+                  </motion.div>
+                  <div className="report-timeline-card">
+                    <div className="report-timeline-card-main">
+                      <h4 className="report-timeline-card-title">Transmission &amp; Spread</h4>
+                      <div className="report-timeline-tags">
+                        <span className="report-timeline-tag tag-purple">Wind currents</span>
+                        <span className="report-timeline-tag tag-purple">Rain splash</span>
+                        <span className="report-timeline-tag tag-purple">Overhead irrigation</span>
+                        <span className="report-timeline-tag tag-purple">Crop debris</span>
+                      </div>
+                      <div className="report-timeline-text">
+                        {typeof sections.transmission_and_spread === 'object' && sections.transmission_and_spread ? (
+                          <>
+                            {sections.transmission_and_spread.primary_vectors && (
+                              <p style={{ margin: '0 0 0.35rem 0' }}>
+                                {Array.isArray(sections.transmission_and_spread.primary_vectors)
+                                  ? sections.transmission_and_spread.primary_vectors.join(' ')
+                                  : sections.transmission_and_spread.primary_vectors}
+                              </p>
+                            )}
+                            {sections.transmission_and_spread.survival_mechanism && (
+                              <p style={{ margin: 0 }}>
+                                <strong style={{ color: 'var(--forest-950)' }}>Survival mechanism: </strong>
+                                {sections.transmission_and_spread.survival_mechanism}
+                              </p>
+                            )}
+                          </>
+                        ) : typeof sections.transmission_and_spread === 'string' ? (
+                          <p style={{ margin: 0 }}>{sections.transmission_and_spread}</p>
+                        ) : (
+                          <p style={{ margin: 0 }}>
+                            Conidia and spores travel rapidly on air currents, water splash, and worker handling. Pathogen structures persist on un-decomposed plant debris and trellising between crop cycles.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <motion.div variants={iconBadgeVariants} className="report-timeline-icon-box" style={{ '--icon-theme': '#7c3aed' }}>
+                      <Wind style={{ width: '18px', height: '18px' }} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* 05 – Prevention Practices */}
+                <motion.div variants={timelineCardVariants} className="report-timeline-row">
+                  <div className="report-timeline-node-dot" />
+                  <motion.div variants={badgeVariants} className="report-timeline-badge">
+                    05
+                  </motion.div>
+                  <div className="report-timeline-card">
+                    <div className="report-timeline-card-main">
+                      <h4 className="report-timeline-card-title">Prevention Practices</h4>
+                      <ul className="report-timeline-bullets">
+                        {sections.prevention_practices && Array.isArray(sections.prevention_practices) && sections.prevention_practices.length > 0 ? (
+                          sections.prevention_practices.map((p, i) => (
+                            <li key={i} className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#0d9488' }} />
+                              <span>{p}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#0d9488' }} />
+                              <span>Provide generous spacing and prune suckers/lower foliage for continuous air movement and light penetration.</span>
+                            </li>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#0d9488' }} />
+                              <span>Employ drip irrigation under plastic mulch to prevent foliage splash dispersal.</span>
+                            </li>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#0d9488' }} />
+                              <span>Control broadleaf weed hosts and execute 2–3 year crop rotation away from susceptible host species.</span>
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+                    <motion.div variants={iconBadgeVariants} className="report-timeline-icon-box" style={{ '--icon-theme': '#0d9488' }}>
+                      <Shield style={{ width: '18px', height: '18px' }} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* 06 – Recommended Management */}
+                <motion.div variants={timelineCardVariants} className="report-timeline-row">
+                  <div className="report-timeline-node-dot" />
+                  <motion.div variants={badgeVariants} className="report-timeline-badge">
+                    06
+                  </motion.div>
+                  <div className="report-timeline-card">
+                    <div className="report-timeline-card-main">
+                      <h4 className="report-timeline-card-title">Recommended Management</h4>
+                      <ul className="report-timeline-bullets">
+                        {typeof sections.recommended_management === 'object' && sections.recommended_management?.cultural_controls ? (
+                          sections.recommended_management.cultural_controls.map((c, i) => (
+                            <li key={i} className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#0284c7' }} />
+                              <span>{c}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#0284c7' }} />
+                              <span>Prune and destroy infected leaves during warm, dry midday hours when spore release is minimal.</span>
+                            </li>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#0284c7' }} />
+                              <span>Sanitize greenhouse walls, trellising, benches, and shears immediately following harvest.</span>
+                            </li>
+                          </>
+                        )}
+                        {sections.recommended_management?.cautionary_dosage_note && (
+                          <li className="report-timeline-bullet-item" style={{ marginTop: '0.4rem', color: '#92400e' }}>
+                            <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#d97706' }} />
+                            <span><strong>Caution: </strong>{sections.recommended_management.cautionary_dosage_note}</span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                    <motion.div variants={iconBadgeVariants} className="report-timeline-icon-box" style={{ '--icon-theme': '#0284c7' }}>
+                      <CheckCircle2 style={{ width: '18px', height: '18px' }} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* 07 – Severity Interpretation */}
+                <motion.div variants={timelineCardVariants} className="report-timeline-row">
+                  <div className="report-timeline-node-dot" />
+                  <motion.div variants={badgeVariants} className="report-timeline-badge">
+                    07
+                  </motion.div>
+                  <div className="report-timeline-card">
+                    <div className="report-timeline-card-main">
+                      <h4 className="report-timeline-card-title">Severity Interpretation</h4>
+                      <div style={{ marginBottom: '0.65rem' }}>
+                        <span className={`report-pill-badge ${
+                          isHealthy
+                            ? 'pill-green'
+                            : severityVal.toLowerCase() === 'mild'
+                              ? 'pill-green'
+                              : severityVal.toLowerCase() === 'severe'
+                                ? 'pill-red'
+                                : 'pill-amber'
+                        }`}>
+                          {isHealthy ? 'Healthy: 0%' : `Graded: ${severityVal}`}
+                        </span>
+                      </div>
+                      <p className="report-timeline-text">
+                        {typeof sections.severity_interpretation === 'string' && sections.severity_interpretation.trim()
+                          ? sections.severity_interpretation
+                          : isHealthy
+                            ? 'No disease progression observed. Plant exhibits normal cell turgor and active chlorophyll.'
+                            : `Severity is assessed as ${severityVal}, with a synthesized overall risk of ${overallRisk}${predictedYield != null ? ` and an expected yield of ${predictedYield} t/ha.` : '.'}`}
+                      </p>
+
+                      {/* Severity Track Gauge (Reference) */}
+                      <div className="report-severity-track-wrapper">
+                        <div className="report-severity-track">
+                          <div
+                            className="report-severity-indicator"
+                            style={{ left: `${Math.max(4, Math.min(96, severityPercent))}%` }}
+                          />
+                        </div>
+                        <div className="report-severity-labels">
+                          <span style={{ color: severityVal.toLowerCase() === 'mild' || isHealthy ? '#16a34a' : 'inherit' }}>
+                            {isHealthy ? 'Healthy' : 'Mild'}
+                          </span>
+                          <span style={{ color: severityVal.toLowerCase() === 'severe' ? '#dc2626' : 'inherit' }}>
+                            Severe
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <motion.div variants={iconBadgeVariants} className="report-timeline-icon-box" style={{ '--icon-theme': '#e11d48' }}>
+                      <BarChart2 style={{ width: '18px', height: '18px' }} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* 08 – Professional Advice Triggers */}
+                <motion.div variants={timelineCardVariants} className="report-timeline-row">
+                  <div className="report-timeline-node-dot" />
+                  <motion.div variants={badgeVariants} className="report-timeline-badge">
+                    08
+                  </motion.div>
+                  <div className="report-timeline-card">
+                    <div className="report-timeline-card-main">
+                      <h4 className="report-timeline-card-title">Professional Advice Triggers</h4>
+                      <ul className="report-timeline-bullets">
+                        {sections.professional_advice_triggers && Array.isArray(sections.professional_advice_triggers) && sections.professional_advice_triggers.length > 0 ? (
+                          sections.professional_advice_triggers.map((t, i) => (
+                            <li key={i} className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#9333ea' }} />
+                              <span>{t}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#9333ea' }} />
+                              <span>More than 25% of canopy shows velvety sporulation or necrotic spots despite lowering structure humidity.</span>
+                            </li>
+                            <li className="report-timeline-bullet-item">
+                              <span className="report-timeline-bullet-dot" style={{ backgroundColor: '#9333ea' }} />
+                              <span>Vascular wilting, fruit lesions or stem cankers appear, indicating a secondary viral or bacterial complex.</span>
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+                    <motion.div variants={iconBadgeVariants} className="report-timeline-icon-box" style={{ '--icon-theme': '#9333ea' }}>
+                      <AlertTriangle style={{ width: '18px', height: '18px' }} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+              </motion.div>
+            </div>
+
+            {/* ═══════ 8. AGRICULTURAL KNOWLEDGE SOURCES (Reference 2) ═══════ */}
+            {sources && sources.length > 0 && (
+              <motion.div {...cardFadeUp(0.48)} className="report-sources-wrapper">
+                <div className="report-sources-backdrop" />
+                <div className="report-sources-badge">
+                  <BookOpen style={{ width: '22px', height: '22px' }} />
+                </div>
+                <div className="report-sources-surface">
+                  <h3 className="report-sources-title">Agricultural Knowledge Sources</h3>
+                  <div>
+                    {sources.map((src, i) => (
+                      <div key={i} className="report-source-row">
+                        <div>
+                          <span className="report-source-title">{src.title || src.organization}</span>
+                          {src.organization && src.title && (
+                            <span className="report-source-org"> — {src.organization}</span>
+                          )}
+                        </div>
+                        {src.url ? (
+                          <a
+                            href={src.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="report-source-link"
+                          >
+                            <span>Reference</span>
+                            <ExternalLink style={{ width: '12px', height: '12px', display: 'inline', marginLeft: '3px' }} />
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extension Fact Sheet</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ═══════ 9. SCIENTIFIC DISCLAIMER FOOTER (Reference 2) ═══════ */}
+            <div className="report-disclaimer-panel">
+              <p className="report-disclaimer-text">
+                Disclaimer: CropLens AI Assistant provides disease-specific agricultural guidance grounded in peer-reviewed extension references. It does not replace field inspection by a certified agronomist. Never apply chemical treatments based solely on AI model output.
+              </p>
+            </div>
+
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

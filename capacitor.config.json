@@ -1,0 +1,10 @@
+{
+  "appId": "com.croplens.ai",
+  "appName": "CropLens AI",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}
+

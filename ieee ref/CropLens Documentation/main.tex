@@ -1,0 +1,158 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[a4paper,12pt,twoside]{report}
+\usepackage[a4paper,tmargin=1in,bmargin=1in,lmargin=1.25in,rmargin=1in]{geometry}
+\usepackage{authblk,lineno,color,lscape,sectsty}
+\usepackage[autostyle]{csquotes}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[labelfont=bf]{caption}
+\usepackage{emptypage}
+\usepackage{array,float,multirow,graphicx,setspace,titlesec,tocloft}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{chngcntr,rotating,pdflscape,enumitem,algpseudocode,algorithm,subcaption}
+\usepackage{longtable}
+\usepackage{booktabs}
+\numberwithin{equation}{section}
+
+% URL breaking and hyperref (loaded once cleanly)
+\usepackage{xurl}
+\usepackage[breaklinks,colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+
+% Line spacing
+\linespread{1.2}
+
+% Chapter title format
+\titleformat{\chapter}[display]
+{\normalfont \huge \filleft \bfseries\color{black}}{\chaptertitlename\ \thechapter}{8pt}{\LARGE}
+\titlespacing*{\chapter}{0pt}{0pt}{10pt}
+
+% Graphics
+\graphicspath{{./Figures/}}
+\usepackage{placeins}
+
+% TOC rules
+\renewcommand\cftaftertoctitle{\par\noindent\rule{\textwidth}{2pt}\par\vskip-3.5em}
+\renewcommand\cftafterloftitle{\par\noindent\rule{\textwidth}{2pt}\par\vskip-3.0em}
+\renewcommand\cftafterlottitle{\par\noindent\rule{\textwidth}{2pt}\par\vskip-3.0em}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%% FRONT MATTER %%%%%%%%%%%%%%%%
+
+\pagenumbering{roman}
+
+\input{titlepage.tex}
+\clearpage
+
+\input{certificate.tex}
+\addcontentsline{toc}{chapter}{Certificate}
+\clearpage
+
+\input{declaration.tex}
+\addcontentsline{toc}{chapter}{Declaration}
+\clearpage
+
+\input{acknowledgment.tex}
+\addcontentsline{toc}{chapter}{Acknowledgments}
+\clearpage
+
+\input{abstract.tex}
+\clearpage
+
+\input{listofpublications.tex}
+\addcontentsline{toc}{chapter}{List of Publications}
+\clearpage
+
+\input{LOA.tex}
+\addcontentsline{toc}{chapter}{List of Acronyms/Abbreviations}
+\clearpage
+
+\tableofcontents
+\clearpage
+
+\listoffigures
+\clearpage
+
+\listoftables
+\clearpage
+
+%%%%%%%%%%%%%%%% MAIN CONTENT %%%%%%%%%%%%%%%%
+
+\pagenumbering{arabic}
+
+\input{chapters/chapter1.tex}
+\clearpage
+
+\input{chapters/chapter2.tex}
+\clearpage
+
+\input{chapters/chapter3.tex}
+\clearpage
+
+\input{chapters/chapter4.tex}
+\clearpage
+
+\input{chapters/chapter5.tex}
+\clearpage
+
+\input{chapters/chapter6.tex}
+\clearpage
+
+\input{chapters/chapter7.tex}
+\clearpage
+
+%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{References}
+\small
+
+\bibitem{breiman2001}
+\textbf{L. Breiman}, ``Random Forests,'' \textit{Machine Learning}, vol.~45, no.~1, pp.~5--32, 2001.\\
+\textit{DOI:} \url{https://doi.org/10.1023/A:1010933404324}
+
+\bibitem{mohanty2016}
+\textbf{S.~P. Mohanty, D.~P. Hughes, and M. Salath\'{e}}, ``Using Deep Learning for Image-Based Plant Disease Detection,'' \textit{Frontiers in Plant Science}, vol.~7, p.~1419, 2016.\\
+\textit{DOI:} \url{https://doi.org/10.3389/fpls.2016.01419}
+
+\bibitem{wang2017}
+\textbf{G. Wang, Y. Sun, and J. Wang}, ``Automatic Image-Based Plant Disease Severity Estimation Using Deep Learning,'' \textit{Computational Intelligence and Neuroscience}, vol.~2017, Art.~no.~2917536, 2017.\\
+\textit{DOI:} \url{https://doi.org/10.1155/2017/2917536}
+
+\bibitem{ferentinos2018}
+\textbf{K.~P. Ferentinos}, ``Deep Learning Models for Plant Disease Detection and Diagnosis,'' \textit{Computers and Electronics in Agriculture}, vol.~145, pp.~311--318, 2018.\\
+\textit{DOI:} \url{https://doi.org/10.1016/j.compag.2018.01.009}
+
+\bibitem{sandler2018}
+\textbf{M. Sandler, A. Howard, M. Zhu, A. Zhmoginov, and L.-C. Chen}, ``MobileNetV2: Inverted Residuals and Linear Bottlenecks,'' in \textit{Proc. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pp.~4510--4520, 2018.\\
+\textit{DOI:} \url{https://doi.org/10.1109/CVPR.2018.00474}
+
+\bibitem{parraga2019}
+\textbf{J. Parraga-Alava, K. Cusme, A. Loor, and E. Santander}, ``RoCoLe: A Robusta Coffee Leaf Images Dataset for Evaluation of Machine Learning Based Methods in Plant Diseases Recognition,'' \textit{Data in Brief}, vol.~25, p.~104414, 2019.\\
+\textit{DOI:} \url{https://doi.org/10.1016/j.dib.2019.104414}
+
+\bibitem{severity2024}
+\textbf{Agricultural AI Research Consortium}, ``A New Mobile Diagnosis System for Estimation of Crop Disease Severity Using Deep Transfer Learning,'' \textit{Crop Protection}, ScienceDirect, 2024.\\
+\textit{Available:} \url{https://www.sciencedirect.com/science/article/pii/S0261219424002047}
+
+\bibitem{russakovsky2015}
+\textbf{O. Russakovsky et al.}, ``ImageNet Large Scale Visual Recognition Challenge,'' \textit{International Journal of Computer Vision (IJCV)}, vol.~115, no.~3, pp.~211--252, 2015.\\
+\textit{DOI:} \url{https://doi.org/10.1007/s11263-015-0816-y}
+
+\bibitem{selvaraju2017}
+\textbf{R.~R. Selvaraju et al.}, ``Grad-CAM: Visual Explanations from Deep Networks via Gradient-Based Localization,'' in \textit{Proc. IEEE/CVF International Conference on Computer Vision (ICCV)}, pp.~618--626, 2017.\\
+\textit{DOI:} \url{https://doi.org/10.1109/ICCV.2017.74}
+
+\bibitem{kamilaris2018}
+\textbf{A. Kamilaris and F.~X. Prenafeta-Bold\'{u}}, ``Deep Learning in Agriculture: A Survey,'' \textit{Computers and Electronics in Agriculture}, vol.~147, pp.~70--90, 2018.\\
+\textit{DOI:} \url{https://doi.org/10.1016/j.compag.2018.02.016}
+
+\bibitem{leite2024}
+\textbf{D. Leite, A. Brito, and G. Faccioli}, ``Advancements and Outlooks in Utilizing Convolutional Neural Networks for Plant Disease Severity Assessment: A Comprehensive Review,'' \textit{Smart Agricultural Technology}, vol.~9, Art.~no.~100573, 2024.\\
+\textit{DOI:} \url{https://doi.org/10.1016/j.atech.2024.100573}
+
+\bibitem{openmeteo2024}
+\textbf{Open-Meteo}, ``Weather Forecast and Geocoding API Documentation,'' [Online].\\
+\textit{Available:} \url{https://open-meteo.com/}
+
+\end{thebibliography}
+
+\end{document}

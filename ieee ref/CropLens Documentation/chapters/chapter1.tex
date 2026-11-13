@@ -1,0 +1,61 @@
+\chapter{Introduction}
+\noindent\rule{\linewidth}{2pt}
+This chapter provides a brief description of CropLens AI, including its background, motivation, problem statement, objectives, and the overall organisation of the project report.
+
+\section{Background}
+
+Agriculture is the backbone of economies across South and Southeast Asia, Africa, and Latin America, yet smallholder farmers continue to suffer disproportionate crop losses due to plant diseases that are detected too late. Fungal pathogens, bacterial infections, viral agents, and pest infestations collectively reduce global crop production by an estimated 20--40\% annually. Early and accurate visual diagnosis of diseases from leaf imagery has therefore become a critical research challenge at the intersection of agricultural science and artificial intelligence.
+
+Deep learning, particularly Convolutional Neural Networks (CNNs), has demonstrated remarkable accuracy in automated image-based plant disease recognition. The landmark work of Mohanty, Hughes, and Salath\'{e} (2016) established the PlantVillage benchmark, showing that a single deep model could identify 26 diseases across 14 crops with over 99\% accuracy on controlled laboratory images. However, most existing solutions address only disease identification, leaving the equally important questions of \textit{severity grading}, \textit{yield impact}, and \textit{actionable guidance} unanswered for the farmer.
+
+CropLens AI is a full-stack academic engineering prototype that addresses this gap by combining a multi-stage machine learning pipeline with an AI explanation engine and a modern interactive web interface. The system processes a leaf photograph and optional farm parameters through four sequential models --- a Leaf Validation Gate, a Disease Classifier, a Disease-Conditioned Severity Model, and a Yield Regressor --- and synthesizes their outputs into a transparent crop health report with grounded disease-specific explanations.
+
+\section{Motivation for the Present Research Work}
+
+The motivation for CropLens AI arises from three observed gaps in existing agricultural AI tools:
+
+\begin{itemize}
+    \item \textbf{Binary diagnosis without severity:} Most publicly available plant disease classifiers predict only the disease name. Farmers need to know \textit{how serious} the infection is to decide whether immediate treatment is required or whether monitoring is sufficient.
+
+    \item \textbf{Lack of integrated yield-risk assessment:} Disease severity alone does not capture the full economic impact. Soil nutrient imbalances silently reduce yield potential even when disease symptoms are not yet visually prominent. A unified risk score combining disease, severity, and soil-climate signals provides more actionable guidance.
+
+    \item \textbf{Inaccessible expert explanations:} Raw model predictions (disease class names, probability values) are not meaningful to farmers without agricultural expertise. A grounded AI explanation layer that translates ML outputs into farmer-friendly language --- and reads it aloud for accessibility --- is needed for real-world adoption.
+\end{itemize}
+
+CropLens AI addresses all three gaps within a single, cohesive, open-source web application.
+
+\section{Problem Statement}
+
+Smallholder and commercial farmers often cannot distinguish between diseases visually, cannot assess severity progression, and cannot quickly estimate the yield risk associated with an observed infection. Existing open-source tools either (a) classify diseases without severity or yield context, (b) require GPU hardware impractical in the field, or (c) produce raw numerical outputs without interpretable explanations.
+
+The problem addressed in this project is to design, implement, and validate an end-to-end AI-powered crop health assessment platform that: (1) validates leaf images before analysis, (2) classifies disease across 38 categories spanning 14 crops, (3) estimates disease severity for supported disease pairs, (4) predicts crop yield from soil and climate inputs, (5) fuses all signals into a unified risk level, and (6) generates a grounded, disease-specific explanation accessible to users with varying levels of agricultural literacy.
+
+\section{Objectives}
+
+The specific objectives of this project are:
+\begin{enumerate}
+    \item Train and deploy a binary MobileNetV2 Leaf Gate to reject non-leaf images before disease analysis.
+    \item Train a 38-class MobileNetV2 Disease Classifier on the PlantVillage dataset with $>$97\% validation accuracy.
+    \item Design and train a novel Disease-Conditioned Severity MobileNetV2 model that uses a learned disease embedding for disease-aware severity classification.
+    \item Train a Random Forest yield regressor on tabular soil and climate data.
+    \item Implement a transparent deterministic Risk Fusion Engine combining all model outputs.
+    \item Build a real-time streaming React frontend with an animated pipeline view and an accessible voice narration feature.
+    \item Integrate Google Gemini with a structured agricultural knowledge base to generate grounded, disease-specific explanations.
+    \item Redesign the report's Detailed Disease-Specific Explanation section as a professional vertical infographic timeline.
+    \item Validate all 84 automated backend tests across all 38 disease classifier labels.
+\end{enumerate}
+
+\section{Organisation of the Project Report}
+
+The research work presented in this report is organised into the following chapters:
+
+\begin{itemize}
+    \item \textbf{Chapter 1} describes the introduction, including background, motivation, problem statement, and objectives.
+    \item \textbf{Chapter 2} presents a literature review of deep learning-based plant disease detection, severity estimation, and yield prediction.
+    \item \textbf{Chapter 3} explains the methodology adopted for developing the four-stage ML pipeline and web application.
+    \item \textbf{Chapter 4} describes the system architecture, data flow, and component interactions.
+    \item \textbf{Chapter 5} presents the implementation details of all ML models, the backend API, and the frontend interface including the latest Gemini AI enhancement.
+    \item \textbf{Chapter 6} discusses results, model performance metrics, and comparative analysis.
+    \item \textbf{Chapter 7} concludes the project and outlines future research directions.
+\end{itemize}
+

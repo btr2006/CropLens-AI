@@ -86,7 +86,7 @@ def fuse_crop_health_risk(
     disease_is_healthy = (disease.strip().lower() == "healthy" or raw_class.lower().endswith("___healthy"))
 
     if disease_is_healthy:
-        risk_explanation.append("Crop is assessed as Healthy ($0\%$ disease severity progression).")
+        risk_explanation.append("Crop is assessed as Healthy (0% disease severity progression).")
     elif sev_status == "graded" and sev_supported:
         if sev_conf is not None and sev_conf < SEVERITY_CONFIDENCE_WARNING_THRESHOLD:
             warnings.append(
@@ -155,6 +155,7 @@ def fuse_crop_health_risk(
         "crop": crop,
         "predicted_crop": crop,
         "disease": disease,
+        "raw_class": raw_class,
         "disease_confidence": disease_conf,
         "severity": sev_val,
         "severity_confidence": sev_conf,

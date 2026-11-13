@@ -1,0 +1,131 @@
+\chapter{Methodology}
+\noindent\rule{\linewidth}{2pt}
+This chapter describes the methodology adopted for the design, training, and deployment of CropLens AI, including the development approach, datasets used, model architectures, training procedures, and system workflow.
+
+\section{Overview}
+
+CropLens AI is developed as a full-stack web application with four sequential machine learning components operating as a unified pipeline. The methodology follows a structured engineering lifecycle: dataset curation, model training and validation, backend API development, frontend interface construction, AI explanation integration, and automated test validation.
+
+\section{System Development Approach}
+
+The system is developed using the following phases:
+
+\begin{itemize}
+    \item \textbf{Requirement Analysis:} Identification of user needs --- disease detection from leaf images, severity grading, yield risk estimation, AI-powered explanation, and voice accessibility.
+
+    \item \textbf{Dataset Curation:} Three open-source agricultural datasets were selected and curated with leakage-controlled splits. Data quality checks including resolution validation, SHA-256 hash-based deduplication, and brightness thresholding were applied.
+
+    \item \textbf{Model Design and Training:} Three neural networks (Leaf Gate, Disease Classifier, Severity Model) and one Random Forest regressor were designed, trained, and validated independently using PyTorch and scikit-learn.
+
+    \item \textbf{Backend API Development:} A FastAPI Python server was built to load all models at startup and expose them via RESTful and Server-Sent Events endpoints for real-time streaming inference.
+
+    \item \textbf{Frontend Development:} A React~19 + Vite single-page application was built with animated pipeline views, report display, AI assistant, and voice narration.
+
+    \item \textbf{AI Explanation Integration:} A structured agricultural knowledge base of 38 disease entries was created. Google Gemini API was integrated as a grounded explanation engine with a deterministic fallback.
+
+    \item \textbf{Testing and Validation:} 84 automated pytest tests validate all 38 classifier labels, knowledge base completeness, API endpoint correctness, Gemini fallback behavior, and security properties.
+\end{itemize}
+
+\section{Datasets Used}
+
+Three datasets were used for training the three ML models in CropLens AI.
+
+\subsection{PlantVillage / New Plant Diseases Dataset}
+
+\begin{itemize}
+    \item \textbf{Source:} Kaggle (\texttt{vipoooool/new-plant-diseases-dataset})
+    \item \textbf{Total images:} 87,867
+    \item \textbf{Training split:} 70,295 images
+    \item \textbf{Validation split:} 17,572 images
+    \item \textbf{Classes:} 38 crop-disease categories across 14 crop species
+    \item \textbf{Used for:} Training the Disease Classification MobileNetV2 model
+\end{itemize}
+
+\subsection{AI Challenger 2018 — Plant Disease Recognition}
+
+\begin{itemize}
+    \item \textbf{Source:} \texttt{challenger.ai}
+    \item \textbf{Total images inspected:} 42,680
+    \item \textbf{Labelled images (clean split):} 37,721
+    \item \textbf{Training split:} 26,407 images
+    \item \textbf{Validation split:} 5,667 images
+    \item \textbf{Held-out test split:} 5,647 images (0 cross-split duplicates)
+    \item \textbf{Severity-annotated subset:} 19,032 images with explicit Mild/Severe labels
+    \item \textbf{Supported disease pairs:} 14 crop-disease pairs
+    \item \textbf{Used for:} Training the Disease-Conditioned Severity Model
+\end{itemize}
+
+\subsection{Crop Yield Prediction Using Soil and Weather}
+
+\begin{itemize}
+    \item \textbf{Source:} Kaggle (\texttt{gurudathg/}\allowbreak\texttt{crop-yield-prediction-using-soil-and-weather})
+    \item \textbf{Total rows:} 2,596 agronomic observations
+    \item \textbf{Features:} Fertilizer (kg/ha), Temperature (\textdegree C), Nitrogen (N), Phosphorus (P), Potassium (K)
+    \item \textbf{Target:} Yield in tonnes per hectare (t/ha)
+    \item \textbf{Train/test split:} 80/20, \texttt{random\_state=42}
+    \item \textbf{Used for:} Training the Random Forest Yield Regressor
+\end{itemize}
+
+\section{Model Architectures and Training Procedures}
+
+\subsection{Leaf Validation Gate (Binary MobileNetV2)}
+
+The Leaf Gate is a binary MobileNetV2 classifier trained to distinguish \texttt{valid\_leaf} images from \texttt{non\_leaf} images. The model uses ImageNet-pretrained weights with a custom binary classifier head. A calibration sweep over decision thresholds from 0.1 to 0.9 was performed on the validation set, selecting the threshold that minimises the False Acceptance Rate (FAR) while keeping the False Rejection Rate (FRR) $\leq$ 2.5\%. The final calibrated threshold is 0.90.
+
+\subsection{Disease Classifier (38-Class MobileNetV2)}
+
+The Disease Classifier uses an ImageNet-pretrained MobileNetV2 backbone with frozen feature layers and a retrained linear classifier head outputting 38 classes. Training used the Adam optimiser (learning rate = 0.001) for 5 epochs with Cross-Entropy Loss. Input images are resized to 224$\times$224 and normalised with ImageNet mean and standard deviation. Top-3 predictions are returned to the frontend.
+
+\subsection{Disease-Conditioned Severity Model (Custom MobileNetV2 + Embedding)}
+
+This is the novel core contribution of CropLens AI. The architecture, \texttt{DiseaseConditioned-}\allowbreak\texttt{MobileNetV2}, combines:
+\begin{itemize}
+    \item A MobileNetV2 backbone producing a 1,280-dimensional image feature vector via global average pooling.
+    \item A learned \texttt{nn.Embedding} layer mapping disease pair ID (0--13) to a 32-dimensional disease vector.
+    \item Concatenation of the 1,280-dim image feature and 32-dim disease embedding (1,312 total dimensions).
+    \item A two-layer classifier head (Linear $\rightarrow$ ReLU $\rightarrow$ Dropout $\rightarrow$ Linear $\rightarrow$ 2 classes) producing Mild or Severe logits.
+\end{itemize}
+This design allows the model to apply disease-specific decision boundaries rather than a single global threshold, acknowledging that the visual manifestation of Mild and Severe stages varies significantly across different crop-disease combinations.
+
+\subsection{Yield Prediction (Random Forest Regressor)}
+
+A scikit-learn \texttt{RandomForestRegressor} with 100 decision trees (\texttt{random\_state=42}) was trained on an 80/20 split of 2,596 tabular agronomic observations. The five input features are: Fertilizer, Temperature, N, P, and K. The model does not include crop species as a feature due to dataset limitations, which is documented as a system limitation.
+
+\section{Deterministic Risk Fusion Logic}
+
+The Risk Fusion Engine combines disease, severity, and yield outputs using the following rule matrix:
+\begin{itemize}
+    \item \textbf{Healthy crop:} Overall risk = \textbf{Low} (or \textbf{Medium} if yield risk is High).
+    \item \textbf{Severe disease:} Overall risk = \textbf{High}.
+    \item \textbf{Mild disease:} Overall risk = \textbf{Medium} (or \textbf{High} if yield risk is also High).
+    \item \textbf{Single-stage disease:} Overall risk = \textbf{Medium} (or \textbf{High} if yield risk is High).
+    \item \textbf{Severity unavailable:} Overall risk = \textbf{Medium} or \textbf{High} based on yield risk.
+\end{itemize}
+Yield risk thresholds: High $<$ 8 t/ha, Medium 8--15 t/ha, Low $\geq$ 15 t/ha. These are project-level parameters documented in \texttt{risk\_fusion.py}.
+
+\section{Agricultural Knowledge Base and Gemini Integration}
+
+A structured knowledge base (\texttt{knowledge\_base.py}) was created covering all 38 disease classifier labels with peer-reviewed agricultural information: causative pathogen, taxonomic classification, disease overview, favorable environmental conditions, characteristic symptoms, transmission mechanisms, prevention practices, management recommendations, severity interpretation, and professional advice triggers. Each entry includes source references from established extension services (University of Massachusetts, Cornell University CALS, University of Florida IFAS, Texas A\&M AgriLife).
+
+Google Gemini (model: \texttt{gemini-3.5-flash-lite}) is integrated via a FastAPI POST endpoint \texttt{/explain/crop-health}. The endpoint retrieves the relevant knowledge base entry, constructs a structured prompt with the prediction results and knowledge base facts, and requests a structured JSON explanation from Gemini. If the API is unavailable (timeout, network error, or missing API key), a deterministic knowledge-base fallback generates a complete explanation without LLM involvement.
+
+\section{System Workflow}
+
+The complete end-to-end workflow of CropLens AI is as follows:
+\begin{enumerate}
+    \item User uploads a leaf image and provides farm parameters (N, P, K, fertilizer, temperature, location) via the React frontend.
+    \item Frontend submits a multipart FormData POST to \texttt{/predict/crop-health/stream} on the FastAPI backend. Simultaneously, \texttt{weatherService.js} fetches real-time weather from Open-Meteo.
+    \item Stage 1 --- Image Validation: Resolution ($\geq$ 64$\times$64) and brightness checks.
+    \item Stage 2 --- Leaf Gate: MobileNetV2 binary classification. Reject if \texttt{valid\_leaf} $<$ 0.90.
+    \item Stage 3 --- Disease Analysis: 38-class MobileNetV2 classification. Crop mismatch check.
+    \item Stage 3.5 --- Severity Routing: Route to conditioned severity model if supported pair; else assign status.
+    \item Stage 4 --- Yield Prediction: Random Forest inference from tabular farm features.
+    \item Stage 5 --- Risk Fusion: Deterministic rule-based overall risk synthesis.
+    \item Stage 6 --- Analysis Complete: Full report emitted as SSE \texttt{analysis\_complete} event.
+    \item Report page renders; AIAssistant calls \texttt{/explain/crop-health} for Gemini explanation.
+    \item Voice narration reads the report via browser \texttt{SpeechSynthesis} API.
+\end{enumerate}
+
+\section{Summary}
+
+This chapter described the complete methodology of CropLens AI including dataset selection, model architectures, training procedures, deterministic risk fusion, knowledge base construction, and Gemini integration. The four-stage pipeline architecture and deterministic rule engine ensure transparency and auditability of all predictions.

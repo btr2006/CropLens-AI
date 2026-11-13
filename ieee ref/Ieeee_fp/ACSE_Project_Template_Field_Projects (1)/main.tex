@@ -1,0 +1,191 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[a4paper,timesnewroman,12pt,twoside]{report}
+%\usepackage[utf8]{inputenc}
+\usepackage[a4paper]{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1.25in,rmargin=1in}
+\usepackage{authblk,lineno,hyperref,color,lscape,url,sectsty}
+\usepackage[autostyle]{csquotes}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[labelfont=bf]{caption}
+\usepackage{emptypage}
+\usepackage{array,float,multirow,graphicx,setspace,cite,url,titlesec,tocloft}
+%\usepackage{mathrsfs}
+\usepackage{}
+\usepackage{amsmath,cleveref,amsfonts,mathtools,notoccite}
+\usepackage{chngcntr,rotating,pdflscape,enumitem,algpseudocode,algorithm,subcaption}
+\usepackage{calligra}
+\numberwithin{equation}{section}
+\linespread{1.3}
+\titleformat{\chapter}[display]
+%{\normalfont\huge \bfseries}{\chaptertitlename\ \thechapter}{5pt}{\Huge}
+{\normalfont \huge \filleft \bfseries\color{black}}{\chaptertitlename\ \thechapter}{8pt}{\LARGE}
+\titlespacing*{\chapter}{0pt}{0pt}{10pt}
+\graphicspath{{./Figures/}}
+\renewcommand\cftaftertoctitle{\par\noindent\rule{\textwidth}{2pt}\par\vskip-3.5em}
+\renewcommand\cftafterloftitle{\par\noindent\rule{\textwidth}{2pt}\par\vskip-3.0em}
+\renewcommand\cftafterlottitle{\par\noindent\rule{\textwidth}{2pt}\par\vskip-3.0em}
+% Line spacing
+\usepackage{setspace}
+\linespread{1.2} % �� slightly reduced (looks like your reference)
+
+% Graphics
+\usepackage{graphicx}
+\usepackage{subcaption}
+\graphicspath{{./Figures/}}
+\usepackage{float}
+\usepackage{placeins}
+
+% Colors & links
+\usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+
+% Math
+\usepackage{amsmath,amsfonts,amssymb}
+
+% Tables
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{longtable}
+
+% Lists
+\usepackage{enumitem}
+
+% Algorithms
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Remove titlesec (�� IMPORTANT — avoids spacing issues)
+% \usepackage{titlesec}
+
+
+% Captions
+\usepackage[labelfont=bf]{caption}
+
+% Empty pages
+\usepackage{emptypage}
+\usepackage[breaklinks]{hyperref}
+\usepackage{xurl}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%% FRONT MATTER %%%%%%%%%%%%%%%%
+
+\pagenumbering{roman}
+
+\input{titlepage.tex}
+\clearpage
+
+\input{certificate.tex}
+\addcontentsline{toc}{chapter}{Certificate}
+\clearpage
+
+\input{declaration}
+\addcontentsline{toc}{chapter}{Declaration}
+\clearpage
+
+\input{acknowledgment.tex}
+\addcontentsline{toc}{chapter}{Acknowledgments}
+\clearpage
+
+\input{abstract.tex}
+\clearpage
+
+\tableofcontents
+\clearpage
+
+%%%%%%%%%%%%%%%% MAIN CONTENT %%%%%%%%%%%%%%%%
+
+\pagenumbering{arabic}
+
+\input{chapters/chapter1.tex}
+\clearpage
+
+\input{chapters/chapter2.tex}
+\clearpage
+
+\input{chapters/chapter3.tex}
+\clearpage
+
+\input{chapters/chapter4.tex}
+\clearpage
+
+\input{chapters/chapter5.tex}
+\clearpage
+
+\input{chapters/chapter6.tex}
+\clearpage
+
+\input{chapters/chapter7.tex}
+\clearpage
+%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%
+\chapter*{References}
+\addcontentsline{toc}{chapter}{References}
+
+\begin{enumerate}
+\small
+
+\item \textbf{J. Bloch}, \textit{Effective Java}, 3rd ed., Addison-Wesley, 2018.\\
+\textit{Available:} \url{https://www.oreilly.com/library/view/effective-java-3rd/9780134686097/}\\
+\hspace*{1em}This book provides best practices for writing robust and efficient Java programs.\\
+\hspace*{1em}It helped in understanding object-oriented principles used in system development.
+
+\item \textbf{I. Sommerville}, \textit{Software Engineering}, 10th ed., Pearson, 2016.\\
+\textit{Available:} \url{https://www.pearson.com/en-us/subject-catalog/p/software-engineering/P200000003354}\\
+\hspace*{1em}This reference explains software development methodologies and system design concepts.\\
+\hspace*{1em}It guided the overall structure and development approach of the project.
+
+\item \textbf{E. Gamma et al.}, \textit{Design Patterns}, Addison-Wesley, 1994.\\
+\textit{Available:} \url{https://www.oreilly.com/library/view/design-patterns-elements/0201633612/}\\
+\hspace*{1em}This book introduces reusable object-oriented design patterns.\\
+\hspace*{1em}It helped in implementing modular and scalable system architecture.
+
+\item \textbf{T. H. Cormen et al.}, \textit{Introduction to Algorithms}, MIT Press, 2009.\\
+\textit{Available:} \url{https://mitpress.mit.edu/9780262033848/introduction-to-algorithms/}\\
+\hspace*{1em}This book covers fundamental algorithms used in software development.\\
+\hspace*{1em}It supported efficient handling of data and operations in the system.
+
+\item \textbf{S. Malik and P. Singh}, “Airline Reservation System Using Java,” IJCA, 2021.\\
+\textit{Available:} \url{https://www.ijcaonline.org/archives/volume183/number12/31930-2021919902}\\
+\hspace*{1em}This paper presents a Java-based airline reservation system design.\\
+\hspace*{1em}It provided insights into implementing booking and management modules.
+
+\item \textbf{R. Kumar and A. Sharma}, “Web-Based Airline Reservation Systems,” IJARCS, 2022.\\
+\textit{Available:} \url{https://ijarcs.info/index.php/Ijarcs/article/view/6978}\\
+\hspace*{1em}This study discusses web-based airline reservation approaches.\\
+\hspace*{1em}It helped in understanding modern system requirements and scalability.
+
+\item \textbf{M. Patel and K. Shah}, “Airline Reservation System Using OOP,” IJERT, 2023.\\
+\textit{Available:} \url{https://www.ijert.org/research/airline-reservation-system-using-oop-IJERTV12IS050123.pdf}\\
+\hspace*{1em}This paper focuses on using OOP concepts in airline systems.\\
+\hspace*{1em}It supported the application of encapsulation and inheritance.
+
+\item \textbf{D. Lee and H. Kim}, “Modern Airline Systems,” IEEE Access, 2024.\\
+\textit{Available:} \url{https://ieeexplore.ieee.org/}\\
+\hspace*{1em}This research highlights modern architectures for airline systems.\\
+\hspace*{1em}It contributed to understanding system efficiency and performance.
+
+\item \textbf{A. Verma and S. Gupta}, “Cloud-Based Airline Systems,” IJCC, 2025.\\
+\textit{Available:} \url{https://www.inderscience.com/jhome.php?jcode=ijcc}\\
+\hspace*{1em}This paper discusses cloud-based reservation systems.\\
+\hspace*{1em}It provided ideas for scalability and future improvements.
+
+\item \textbf{K. Reddy and V. Rao}, “Database in Airline Systems,” 2022.\\
+\textit{Available:} \url{https://www.ijcsit.com/docs/Volume13/vol13issue02/ijcsit2022130205.pdf}\\
+\hspace*{1em}This study focuses on database management techniques.\\
+\hspace*{1em}It helped in designing structured and efficient data storage.
+
+\item \textbf{P. Sharma}, “Object-Oriented Design in Java,” 2021.\\
+\textit{Available:} \url{https://www.ijert.org/research/object-oriented-design-in-java-IJERTV10IS060456.pdf}\\
+\hspace*{1em}This paper explains object-oriented programming concepts in Java.\\
+\hspace*{1em}It supported implementation of modular system components.
+
+\item \textbf{L. Wang}, “Cloud Reservation Systems,” IEEE, 2023.\\
+\textit{Available:} \url{https://ieeexplore.ieee.org/}\\
+\hspace*{1em}This research explores cloud-based reservation architectures.\\
+\hspace*{1em}It provided insights into distributed system design.
+
+
+
+\end{enumerate}
+\end{document}

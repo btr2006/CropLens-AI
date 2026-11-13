@@ -27,6 +27,7 @@ export default function ScanView({ onStartAnalysis, isSubmitting }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [showAdvancedInputs, setShowAdvancedInputs] = useState(false);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const formatBytes = (bytes) => {
     if (!bytes || bytes === 0) return '0 Bytes';
@@ -110,6 +111,7 @@ export default function ScanView({ onStartAnalysis, isSubmitting }) {
       imageMeta: { name: '', size: '' },
     }));
     if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const handleUsePreset = async () => {
@@ -247,6 +249,14 @@ export default function ScanView({ onStartAnalysis, isSubmitting }) {
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileInputChange}
               />
+              <input
+                type="file"
+                ref={cameraInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileInputChange}
+              />
 
               {formData.imagePreview ? (
                 <div>
@@ -289,6 +299,31 @@ export default function ScanView({ onStartAnalysis, isSubmitting }) {
                     <span>•</span>
                     <span>{formData.imageMeta.size}</span>
                   </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.65rem', marginTop: '0.75rem' }}>
+                    <button
+                      type="button"
+                      className="saas-btn-secondary btn-tap"
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (cameraInputRef.current) cameraInputRef.current.click();
+                      }}
+                    >
+                      📷 Retake Photo
+                    </button>
+                    <button
+                      type="button"
+                      className="saas-btn-secondary btn-tap"
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (fileInputRef.current) fileInputRef.current.click();
+                      }}
+                    >
+                      📁 Change File
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div style={{ padding: '2rem 1rem' }}>
@@ -315,16 +350,53 @@ export default function ScanView({ onStartAnalysis, isSubmitting }) {
                     Supports clear single-leaf images in JPG, PNG, or WEBP (Max 10MB)
                   </p>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="saas-btn-primary btn-tap"
+                      style={{
+                        padding: '0.45rem 1rem',
+                        fontSize: '0.825rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        backgroundColor: 'var(--leaf-600)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (cameraInputRef.current) cameraInputRef.current.click();
+                      }}
+                    >
+                      <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Take Photo
+                    </button>
+
                     <button
                       type="button"
                       className="saas-btn-secondary btn-tap"
-                      style={{ padding: '0.45rem 1rem', fontSize: '0.825rem' }}
+                      style={{
+                        padding: '0.45rem 1rem',
+                        fontSize: '0.825rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (fileInputRef.current) fileInputRef.current.click();
                       }}
                     >
+                      <svg style={{ width: '15px', height: '15px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
                       Browse Files
                     </button>
                     

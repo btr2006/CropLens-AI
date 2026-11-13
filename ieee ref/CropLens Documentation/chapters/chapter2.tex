@@ -1,0 +1,49 @@
+\chapter{Literature Review}
+\noindent\rule{\linewidth}{2pt}
+This chapter presents a review of recent research works related to deep learning-based plant disease detection, severity estimation, yield prediction, and AI explanation systems in agriculture. It identifies the research gaps that motivate the proposed CropLens AI platform.
+
+\section{Literature Review}
+
+\subsection{Plant Disease Detection using Deep Learning (Mohanty et al., 2016)}
+
+Mohanty, Hughes, and Salath\'{e}~\cite{mohanty2016} demonstrated that a deep CNN trained on the PlantVillage dataset of 87,867 leaf images could classify 26 diseases across 14 crops with 99.35\% accuracy under controlled conditions. This study established the PlantVillage benchmark. CropLens AI adopts the same 38-class PlantVillage taxonomy and dataset for its disease classifier, but extends the diagnosis with severity estimation, yield prediction, and multi-signal risk fusion.
+
+\subsection{Efficient CNNs via MobileNetV2 (Sandler et al., 2018)}
+
+Sandler et al.~\cite{sandler2018} introduced MobileNetV2, an efficient architecture using depthwise separable convolutions and inverted residual blocks. MobileNetV2 achieves competitive accuracy on ImageNet with only 3.4 million parameters --- compared to 25 million for ResNet-50 and 138 million for VGG-16. This architectural efficiency enables sub-60ms CPU inference on commodity hardware without requiring a dedicated GPU. CropLens AI uses MobileNetV2 as the backbone for the Leaf Gate, Disease Classifier, and Conditioned Severity Model.
+
+\subsection{Tabular Regression via Random Forests (Breiman, 2001)}
+
+Breiman~\cite{breiman2001} introduced Random Forests, combining bagging with random feature selection to build robust ensembles from decision trees. Random Forests are effective for non-linear feature interactions in tabular agricultural data, such as combined nitrogen and temperature effects on crop yield. CropLens AI uses a scikit-learn \texttt{RandomForestRegressor} with 100 trees trained on soil nutrients and climate features.
+
+\subsection{Coffee Leaf Severity Dataset (Parraga-Alava et al., 2019)}
+
+Parraga-Alava et al.~\cite{parraga2019} created the RoCoLe dataset containing 1,560 robusta coffee leaf images with 4-level rust severity annotations. This dataset proved the feasibility of visual severity grading. CropLens AI conducted exploratory severity tests on RoCoLe before migrating to the larger multi-crop AI Challenger 2018 dataset.
+
+\subsection{Disease Severity Estimation in Agriculture (Leite et al., 2024)}
+
+Leite, Brito, and Faccioli~\cite{leite2024} provided a comprehensive review of CNN advancements for plant disease severity assessment, highlighting the scarcity of multi-crop severity datasets and the need for disease-conditioned architectures. In CropLens AI, this requirement is addressed by introducing a learned 32-dimensional disease embedding that conditions the severity model per crop-disease pair.
+
+\subsection{Deep CNNs for Plant Disease Diagnosis (Ferentinos, 2018)}
+
+Ferentinos~\cite{ferentinos2018} evaluated several CNN architectures on open agricultural image databases covering 58 distinct classes, achieving up to 99.53\% accuracy. The study emphasized the necessity of image validation prior to inference to avoid false positives on non-foliar inputs, which directly inspired the binary Leaf Validation Gate in CropLens AI.
+
+\subsection{ImageNet Transfer Learning (Russakovsky et al., 2015)}
+
+Russakovsky et al.~\cite{russakovsky2015} established the ImageNet challenge and its pretrained weight representations. CropLens AI initialises all three MobileNetV2 models with ImageNet-pretrained weights, accelerating convergence and improving feature extraction.
+
+\subsection{Visual Explainability via Grad-CAM (Selvaraju et al., 2017)}
+
+Selvaraju et al.~\cite{selvaraju2017} introduced Gradient-weighted Class Activation Mapping (Grad-CAM), which highlights discriminative image regions influencing deep network decisions. Grad-CAM visual heatmaps are identified as an important future research direction to interpret CropLens AI foliar predictions.
+
+\subsection{Deep Learning in Agriculture Survey (Kamilaris et al., 2018)}
+
+Kamilaris and Prenafeta-Bold\'{u}~\cite{kamilaris2018} surveyed over 40 agricultural deep learning applications, identifying the lab-to-field domain gap as a major bottleneck --- where models trained on laboratory images degrade under natural illumination, dew, and dust. CropLens AI documents this domain gap explicitly as a system limitation.
+
+\subsection{Grounding Large Language Models in Agriculture}
+
+Recent studies explore large language models for agricultural advisory. CropLens AI integrates Google Gemini with a structured knowledge base of 38 disease entries, ensuring explanations remain grounded in peer-reviewed extension service facts rather than model hallucinations.
+
+\section{Summary}
+
+Existing literature demonstrates that while CNNs classify plant diseases effectively on controlled datasets, existing tools treat disease classification, severity assessment, and yield estimation as disjoint tasks. CropLens AI addresses this fragmentation by integrating disease classification, disease-conditioned severity grading, Random Forest yield prediction, rule-based risk fusion, and grounded LLM explanations into a single unified platform.

@@ -1,0 +1,166 @@
+\chapter{Results and Improvements}
+\noindent\rule{\linewidth}{2pt}
+
+\section{Introduction}
+
+This chapter presents the performance results of all four machine learning components of CropLens AI, analyses system-level pipeline timing, evaluates the system against its requirements, and discusses the improvements achieved over the initial design. Current limitations and proposed improvements are also discussed.
+
+\section{Model Performance Results}
+
+\subsection{Disease Classifier (MobileNetV2, 38-Class)}
+
+Table~\ref{tab:disease_perf} summarises the training and validation performance of the disease classifier on the PlantVillage dataset.
+
+\begin{table}[H]
+\centering
+\caption{Disease Classifier Performance Metrics}
+\label{tab:disease_perf}
+\begin{tabular}{|p{4.2cm}|p{2.6cm}|p{5.5cm}|}
+\hline
+\textbf{Metric} & \textbf{Value} & \textbf{Protocol} \\
+\hline
+Best Validation Accuracy & 97.09\% & Controlled 80/20 PlantVillage split \\
+Cross-Entropy Loss & 0.114 & Validation loss at best epoch \\
+Training Images & 70,295 & PlantVillage training set \\
+Validation Images & 17,572 & PlantVillage validation set \\
+Number of Classes & 38 & 14 crop species \\
+Backbone Architecture & MobileNetV2 & ImageNet pretrained, $\sim$3.4M parameters \\
+Domain Note & Laboratory imagery & Uniform lighting --- real-field may vary \\
+\hline
+\end{tabular}
+\end{table}
+
+The disease classifier achieves competitive accuracy compared to the 99\%+ reported by Mohanty et al. on the same dataset, with the difference attributable to stricter 80/20 train/validation separation (as opposed to the original paper's non-stratified split).
+
+\subsection{Disease-Conditioned Severity Model}
+
+Table~\ref{tab:severity_perf} presents the severity model performance on the zero-leakage held-out test set.
+
+\begin{table}[H]
+\centering
+\caption{Severity Model Performance Metrics (Held-Out Test Set)}
+\label{tab:severity_perf}
+\begin{tabular}{|p{4.2cm}|p{2.6cm}|p{5.5cm}|}
+\hline
+\textbf{Metric} & \textbf{Value} & \textbf{Protocol} \\
+\hline
+Held-Out Test Macro-F1 & 95.57\% & Zero-leakage held-out test (5,647 images) \\
+Mild Class F1 & 95.44\% & Per-class F1 on held-out test \\
+Severe Class F1 & 95.70\% & Per-class F1 on held-out test \\
+Training Images & 26,407 & AI Challenger 2018 training split \\
+Validation Images & 5,667 & AI Challenger 2018 validation split \\
+Held-Out Test Images & 5,647 & Zero cross-split duplicates \\
+Severity-Annotated Subset & 19,032 & Explicit Mild/Severe labels \\
+Supported Disease Pairs & 14 & Corn, Peach, Pepper, Potato, Tomato \\
+\hline
+\end{tabular}
+\end{table}
+
+The 95.57\% Macro-F1 was achieved by the Disease-Conditioned design. Disease conditioning with a 32-dimensional learned embedding allows the model to apply disease-specific decision boundaries, which is the key innovation over a standard single-head binary severity classifier.
+
+\subsection{Yield Prediction (Random Forest Regressor)}
+
+Table~\ref{tab:yield_perf} presents the yield model performance on the held-out test set.
+
+\begin{table}[H]
+\centering
+\caption{Yield Model Performance Metrics}
+\label{tab:yield_perf}
+\begin{tabular}{|p{4.8cm}|p{2.8cm}|p{4.8cm}|}
+\hline
+\textbf{Metric} & \textbf{Value} & \textbf{Protocol} \\
+\hline
+R\textsuperscript{2} Score & 0.9908 & Held-out 20\% tabular test split \\
+Mean Absolute Error (MAE) & 0.1229 t/ha & Held-out 20\% tabular test split \\
+Root Mean Squared Error (RMSE) & 0.1863 t/ha & Held-out 20\% tabular test split \\
+Training Rows & 2,077 & 80\% of 2,596 observations \\
+Test Rows & 519 & 20\% of 2,596 observations \\
+Number of Features & 5 & Fertilizer, Temperature, N, P, K \\
+Algorithm & Random Forest & 100 trees, random\_state=42 \\
+\hline
+\end{tabular}
+\end{table}
+
+The R\textsuperscript{2} of 0.9908 indicates strong fit on the tabular test set. It must be noted that this dataset does not include crop species as a feature, and the yield risk thresholds (High $<$ 8 t/ha, Medium 8--15 t/ha, Low $\geq$ 15 t/ha) are project-level parameters requiring agronomic calibration for real deployment.
+
+\subsection{Risk Fusion Engine Performance}
+
+The deterministic risk fusion runs in $<$ 0.1 ms (typically 0.01--0.02 ms), as verified in \texttt{corrected\_validation\_results.json}. No probabilistic uncertainty is involved; the rule matrix provides a fully auditable decision trace.
+
+\section{Pipeline Inference Timing}
+
+Table~\ref{tab:latency} shows the typical end-to-end pipeline latency on CPU hardware (verified from \texttt{corrected\_validation\_results.json}).
+
+\begin{table}[H]
+\centering
+\caption{Pipeline Stage Inference Latency on CPU}
+\label{tab:latency}
+\begin{tabular}{|p{7.5cm}|p{4.5cm}|}
+\hline
+\textbf{Stage} & \textbf{Typical Latency} \\
+\hline
+Leaf Gate (Binary MobileNetV2) & $<$ 20 ms \\
+Disease Classifier (MobileNetV2) & 14--32 ms \\
+Severity Model (Conditioned MobileNetV2) & 17--22 ms (0 ms if not applicable) \\
+Yield Prediction (Random Forest) & 5--8 ms \\
+Risk Fusion (Deterministic) & $<$ 0.1 ms \\
+\hline
+\textbf{Total End-to-End (CPU)} & \textbf{21--60 ms} \\
+\hline
+\end{tabular}
+\end{table}
+
+The sub-60ms total inference time demonstrates that CropLens AI is suitable for field use on commodity CPU hardware without requiring a dedicated GPU.
+
+\section{Automated Test Suite Results}
+
+All 84 automated pytest tests pass:
+\begin{itemize}
+    \item \texttt{test\_knowledge\_base.py}: 14 tests verifying all 38 class labels covered, field completeness, pathogen type accuracy.
+    \item \texttt{test\_gemini\_service.py}: 26 tests verifying fallback behavior, confidence handling, timeout handling, API key security.
+    \item \texttt{test\_all\_crop\_coverage.py}: 39 tests verifying end-to-end resolution for every classifier label including all healthy classes.
+    \item \textbf{Total:} \textbf{84 passed in 3.46 seconds.} Zero regressions.
+\end{itemize}
+
+\section{Frontend Build Verification}
+
+The production build (\texttt{npm run build}) completes with zero Vite/Rollup syntax or bundling errors, generating a deployable production bundle.
+
+\section{System Improvements Over Initial Design}
+
+\subsection{Disease-Specific AI Explanation Engine}
+
+The initial CropLens AI design used a generic template-based report where only the disease name changed. This was replaced by:
+\begin{itemize}
+    \item A structured knowledge base of 38 disease-specific entries with peer-reviewed agricultural references.
+    \item Gemini API integration generating structured JSON explanations grounded exclusively in knowledge base facts.
+    \item A deterministic fallback ensuring identical information availability without internet connectivity.
+\end{itemize}
+
+\subsection{Timeout and Error Handling Improvements}
+
+The Gemini service was upgraded with increased HTTPX read timeout (15s $\rightarrow$ 45s), separate handling for connection errors, read timeouts, HTTP errors, and invalid JSON, and improved logging of the model name and exact failure reason.
+
+\subsection{Vertical Infographic Timeline Redesign}
+
+The Detailed Disease-Specific Explanation section was redesigned from a 3-column accent grid to a professional vertical connected infographic timeline, improving readability, visual hierarchy, and the progressive disclosure of complex agronomic information.
+
+\subsection{Environment Loading (\texttt{python-}\allowbreak\texttt{dotenv})}
+
+The \texttt{python-dotenv} package was integrated into \texttt{gemini\_service.py} to reliably load \texttt{GEMINI\_API\_KEY} and \texttt{GEMINI\_MODEL} from \texttt{ml-service/.env} with a path resolved relative to the service file, ensuring correct loading regardless of the working directory from which the server is started.
+
+\section{Current Limitations}
+
+\begin{enumerate}
+    \item \textbf{Lab-to-Field Domain Gap:} PlantVillage images have controlled lighting and uniform backgrounds. Real field images with shadows, dew, and overlapping leaves may reduce model confidence.
+    \item \textbf{Severity Coverage:} Explicit Mild/Severe grading is supported for only 14 of 38 disease classes. The remaining classes return Single-stage or Unavailable.
+    \item \textbf{Yield Model Scope:} The yield model does not include crop species as a feature and uses uncalibrated demo risk thresholds.
+    \item \textbf{Deterministic Risk Fusion:} The rule-based engine is not a statistically calibrated probabilistic model and should not be treated as a clinical advisory.
+    \item \textbf{Weather Granularity:} Open-Meteo provides 2--10 km regional weather data, not hyper-local canopy microclimate.
+    \item \textbf{AI Assistant Role:} Gemini acts only as an explanation layer. It does not diagnose raw leaf images or modify ML prediction values.
+    \item \textbf{Research Prototype:} CropLens AI requires multi-season on-farm field validation before commercial deployment.
+\end{enumerate}
+
+\section{Summary}
+
+This chapter demonstrated that CropLens AI achieves strong performance across all four ML components: 97.09\% disease classification accuracy, 95.57\% severity Macro-F1, R\textsuperscript{2} = 0.9908 for yield prediction, and sub-60ms end-to-end pipeline latency on CPU. All 84 automated tests pass. The improvements introduced over the initial design --- the AI explanation engine, vertical infographic timeline, timeout handling, and environment loading --- significantly enhance the system's completeness, robustness, and user experience.

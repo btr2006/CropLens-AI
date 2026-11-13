@@ -10,13 +10,14 @@ from torchvision import models, transforms
 from PIL import Image, ImageStat
 import pandas as pd
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, Tuple, Generator, AsyncGenerator
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, status
+from typing import Optional, Dict, Any, Tuple, Generator, AsyncGenerator, List
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, status, Header
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from risk_fusion import fuse_crop_health_risk
+from gemini_service import generate_crop_health_explanation
 
 # Global variables for loaded models and artifacts
 yield_model = None
@@ -884,6 +885,64 @@ async def predict_crop_health_stream(
         event_generator(),
         media_type="text/event-stream"
     )
+
+class ExplainCropHealthRequest(BaseModel):
+    crop: Optional[str] = "Unknown"
+    predicted_crop: Optional[str] = None
+    disease: Optional[str] = "Unknown"
+    raw_class: Optional[str] = None
+    confidence: Optional[float] = None
+    disease_confidence: Optional[float] = None
+    severity: Optional[str] = None
+    severity_confidence: Optional[float] = None
+    severity_status: Optional[str] = None
+    severity_model_supported: Optional[bool] = False
+    severity_explanation: Optional[str] = None
+    predicted_yield: Optional[float] = None
+    yield_risk: Optional[str] = None
+    overall_risk: Optional[str] = "Low"
+    risk_explanation: Optional[List[str]] = None
+    warnings: Optional[List[str]] = None
+    farm_context: Optional[Dict[str, Any]] = None
+    weather_context: Optional[Dict[str, Any]] = None
+    weather_state: Optional[Dict[str, Any]] = None
+    custom_api_key: Optional[str] = None
+
+@app.post("/explain/crop-health")
+def explain_crop_health_endpoint(
+    request: ExplainCropHealthRequest,
+    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-API-Key")
+):
+    """
+    Generate grounded, disease-specific agricultural explanation using Gemini backend service
+    with automatic fallback to knowledge_base.py.
+    """
+    req_dict = request.model_dump() if hasattr(request, "model_dump") else request.dict()
+
+    # Extract weather context from either weather_context or weather_state
+    weather_ctx = req_dict.get("weather_context") or {}
+    if not weather_ctx and req_dict.get("weather_state"):
+        w_state = req_dict["weather_state"]
+        if isinstance(w_state, dict) and w_state.get("status") == "success" and w_state.get("data"):
+            weather_ctx = w_state["data"]
+
+    # Extract farm context
+    farm_ctx = req_dict.get("farm_context") or {}
+
+    # Custom API key priority: header > body
+    effective_custom_key = None
+    if isinstance(x_gemini_api_key, str) and x_gemini_api_key.strip():
+        effective_custom_key = x_gemini_api_key.strip()
+    elif isinstance(req_dict.get("custom_api_key"), str) and req_dict["custom_api_key"].strip():
+        effective_custom_key = req_dict["custom_api_key"].strip()
+
+    explanation = generate_crop_health_explanation(
+        ml_result=req_dict,
+        farm_context=farm_ctx,
+        weather_context=weather_ctx,
+        custom_api_key=effective_custom_key
+    )
+    return explanation
 
 if __name__ == "__main__":
     import uvicorn

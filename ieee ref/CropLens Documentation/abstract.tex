@@ -1,0 +1,24 @@
+\chapter*{ABSTRACT}
+\addcontentsline{toc}{chapter}{ABSTRACT}
+\noindent\rule{\linewidth}{2pt}
+
+\vspace{30pt}
+
+\noindent
+Crop diseases remain a critical threat to agricultural productivity worldwide, causing annual yield losses of 20--40\% in smallholder farming systems where access to expert agronomists is limited. Early and accurate detection, combined with severity assessment and yield risk estimation, is essential for timely and cost-effective intervention. This project presents CropLens AI, a web-based AI decision-support system that combines computer vision, ensemble machine learning, and a large language model to deliver a comprehensive crop health report from a single leaf photograph and basic farm parameters.
+
+\par
+The system implements a four-stage sequential machine learning pipeline. The first stage is a binary MobileNetV2 Leaf Validation Gate that distinguishes plant leaves from non-plant images with a calibrated threshold of 0.90, preventing meaningless predictions on irrelevant inputs. The second stage is a 38-class MobileNetV2 Disease Classifier trained on 87,867 PlantVillage images spanning 14 crop species, achieving 97.09\% best validation accuracy. The third stage is a novel Disease-Conditioned Severity Model --- a custom multimodal MobileNetV2 architecture augmented with a 32-dimensional learned disease embedding --- that estimates Mild or Severe severity for 14 supported disease pairs, achieving 95.57\% Macro-F1 on a zero-leakage held-out test set of 5,647 images. The fourth stage is a scikit-learn Random Forest Regressor that predicts expected crop yield in tonnes per hectare from five soil and climate features, achieving R\textsuperscript{2} = 0.9908. A deterministic Risk Fusion Engine synthesizes all model outputs into a transparent Low / Medium / High overall risk rating using an audit-ready rule matrix.
+
+\par
+The system is deployed as a full-stack web application: a React~19 + Vite frontend communicates with a FastAPI backend via Server-Sent Events, enabling a real-time animated eight-stage pipeline view. Real-time weather context is fetched from the Open-Meteo API. Google Gemini 3.5 Flash generates a grounded, disease-specific agricultural explanation from a structured knowledge base of 38 disease entries, with a deterministic fallback if the API is unavailable. Browser-native SpeechSynthesis reads the report aloud for accessibility. End-to-end pipeline latency on CPU hardware is 21--60 milliseconds.
+
+\par
+The latest enhancement introduced a vertical infographic timeline redesign of the Detailed Disease-Specific Explanation section, presenting eight structured information cards --- Disease Overview, Favorable Conditions, Characteristic Symptoms, Transmission \& Spread, Prevention Practices, Recommended Management, Severity Interpretation, and Professional Advice Triggers --- with sequential entrance animations, botanical-green design language, and full content preservation.
+
+\par
+This project demonstrates how lightweight neural network architectures, multimodal disease conditioning, ensemble regression, and LLM-powered grounded explanation can be integrated into a practical, accessible, and extensible agricultural AI tool. All 84 automated backend tests pass, and the system is validated against all 38 disease classifier labels.
+
+\vspace{10pt}
+\noindent\textbf{Keywords:} Crop disease detection, MobileNetV2, disease severity estimation, yield prediction, Random Forest, risk fusion, Gemini API, agricultural AI, computer vision, FastAPI, React.
+
